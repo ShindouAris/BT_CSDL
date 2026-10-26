@@ -17,7 +17,7 @@ GO
 CREATE TABLE LoaiMon (
     MaLoai      INT IDENTITY(1,1) NOT NULL,
     TenLoai     NVARCHAR(50) NOT NULL,
-    MaLoaiCha   INT NULL, -- Mã loại (Cha) - FK tự tham chiếu hoặc Null nếu là loại gốc
+    MaLoaiCha   INT NULL, -- Mã loại ( tham chiếu đến Cha ) - FK tự tham chiếu hoặc Null nếu là loại gốc
     CONSTRAINT PK_LoaiMon PRIMARY KEY (MaLoai),
     CONSTRAINT UQ_LoaiMon_Ten UNIQUE (TenLoai),
     CONSTRAINT FK_LoaiMon_Cha FOREIGN KEY (MaLoaiCha) REFERENCES LoaiMon(MaLoai)
