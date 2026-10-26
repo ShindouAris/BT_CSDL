@@ -62,13 +62,7 @@
 
 **CLO1, CLO2**
 
-- Mỗi nhóm có 3–5 sinh viên và một đề tài riêng, không trùng nhóm khác.
-- Có thể kế thừa mô hình từ học phần Cơ sở dữ liệu trước đó nếu được giảng viên cho phép; phải ghi rõ phần kế thừa và phần mở rộng.
-- Vẽ ERD (CDM) bằng PowerDesigner với:
-  - Ít nhất 8 thực thể.
-  - Ít nhất 2 mối kết hợp N–N có thuộc tính riêng.
-  - Ít nhất 1 cấu trúc nâng cao được chỉ định trong đề tài.
-- Chuyển CDM sang PDM, thể hiện đầy đủ khóa chính, khóa ngoại và kiểu dữ liệu. PDM phải khớp với CDM.
+--- Bỏ qua
 
 ### 3.2. Cài đặt cơ sở dữ liệu
 
