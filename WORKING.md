@@ -75,9 +75,13 @@ BT_CSDL/
 ├── sql/                        ← Định nghĩa CSDL (cấu trúc)
 │   ├── 01_CAUHINH_CSDL.sql     ← Tạo CSDL, cấu hình file .mdf/.ldf
 │   └── 02_Bang.sql             ← Tạo 10 bảng, khóa, ràng buộc, chỉ mục
-└── scripts/                    ← Dữ liệu mẫu (nội dung)
-    ├── 01_SEED.sql             ← Nạp dữ liệu danh mục (bàn, món, nguyên liệu…)
-    └── 02_SEED.sql             ← Sinh 1.500 hóa đơn + 5.000 dòng chi tiết
+└── scripts/                    ← Dữ liệu mẫu và script tiện ích
+    ├── readme.md               ← Ghi chú về thư mục
+    ├── 03_RESET_DB.sql         ← Xóa toàn bộ bảng để nạp lại từ đầu
+    ├── 03a_DanhMuc.sql         ← Nạp dữ liệu danh mục (bàn, món, nguyên liệu…)
+    ├── 03b_GiaoDich.sql        ← Sinh 1.500 hóa đơn + ≈5.300 dòng chi tiết,
+    │                             minh họa INSERT/UPDATE/DELETE
+    └── 04_TEST_VI_PHAM.sql     ← 10 lệnh cố tình sai để kiểm chứng ràng buộc
 ```
 
 ### 2.3. Lộ trình bàn giao
@@ -141,7 +145,7 @@ Readme mục 3.11 yêu cầu: *"Mỗi thành viên phụ trách và bảo vệ �
 | Mảng công việc | File phụ trách | Sản phẩm | Người phụ trách |
 |---|---|---|---|
 | Cấu trúc CSDL | `sql/01_CAUHINH_CSDL.sql`, `sql/02_Bang.sql` | CSDL + 10 bảng + ràng buộc | ………… |
-| Dữ liệu mẫu | `scripts/01_SEED.sql`, `scripts/02_SEED.sql` | Dữ liệu danh mục + giao dịch | ………… |
+| Dữ liệu mẫu | `scripts/03a_DanhMuc.sql`, `scripts/03b_GiaoDich.sql` | Dữ liệu danh mục + giao dịch | ………… |
 | Truy vấn & view | `sql/04_TruyVan_View.sql` (*chưa có*) | 20 truy vấn, ≥3 view | ………… |
 | Thủ tục & hàm | `sql/05_ThuTuc_Ham.sql` (*chưa có*) | ≥5 SP, ≥3 function | ………… |
 | Trigger & giao tác | `sql/06_Trigger_GiaoTac.sql` (*chưa có*) | ≥3 trigger, ≥2 kịch bản | ………… |
@@ -178,7 +182,7 @@ Repo không có CSDL server dùng chung; mỗi bạn chạy SQL Server trên má
 |---|---|
 | Chạy `sql/01_CAUHINH_CSDL.sql` (xóa + tạo lại CSDL) | Chỉ khi bạn tự chấp nhận mất dữ liệu trên máy mình. **Phải nhắn nhóm** nếu đang demo chung |
 | Chạy `sql/02_Bang.sql` (xóa + tạo lại bảng) | Như trên |
-| Chạy `scripts/02_SEED.sql` trên CSDL đã có dữ liệu | **Không** — script này không tự xóa dữ liệu cũ, chạy lại sẽ nhân đôi số hóa đơn (xem mục 11.3) |
+| Chạy `scripts/03b_GiaoDich.sql` trên CSDL đã có dữ liệu | **Bị chặn tự động** — script `THROW 50012` ngay từ đầu. Muốn nạp lại phải reset (`03_RESET_DB.sql` → `02_Bang.sql` → `03a_DanhMuc.sql`) |
 | Sửa `sql/02_Bang.sql` | Người phụ trách cấu trúc CSDL; thay đổi lớn phải báo nhóm |
 
 ---
@@ -315,7 +319,7 @@ git push origin --delete feature/view-doanh-thu   # xóa nhánh trên GitHub (t�
 
 ### 6.3. Nhánh `master` trông như thế nào
 
-`master` phải luôn ở trạng thái **chạy được từ đầu đến cuối**: `01_CAUHINH_CSDL.sql` → `02_Bang.sql` → `01_SEED.sql` → `02_SEED.sql` không lỗi. Đây là điều kiện để cuối kỳ lấy bản trên `master` đi nộp.
+`master` phải luôn ở trạng thái **chạy được từ đầu đến cuối**: `01_CAUHINH_CSDL.sql` → `02_Bang.sql` → `03a_DanhMuc.sql` → `03b_GiaoDich.sql` không lỗi. Đây là điều kiện để cuối kỳ lấy bản trên `master` đi nộp.
 
 > **Đề xuất:** trước khi merge vào `master`, người review phải tự chạy lại toàn bộ chuỗi script trên máy mình.
 
@@ -351,7 +355,7 @@ Bám theo đúng thư mục và mốc bàn giao của repo:
 | Phạm vi | Áp dụng cho |
 |---|---|
 | `sql` | `sql/01_CAUHINH_CSDL.sql`, `sql/02_Bang.sql` |
-| `seed` | `scripts/01_SEED.sql`, `scripts/02_SEED.sql` |
+| `seed` | `scripts/03a_DanhMuc.sql`, `scripts/03b_GiaoDich.sql` |
 | `view`, `query` | Truy vấn và view (M2) |
 | `sp`, `func` | Stored procedure và function (M2) |
 | `trigger`, `tran` | Trigger và giao tác (M3) |
@@ -406,7 +410,7 @@ data(seed): tăng số hóa đơn mẫu từ 1500 lên 2000
 |---|---|
 | Thay đổi `sql/02_Bang.sql` (cấu trúc bảng, ràng buộc) | **Bắt buộc** — cả nhóm phụ thuộc cấu trúc này |
 | Thêm view / thủ tục / hàm / trigger mới | **Bắt buộc** |
-| Sửa `scripts/02_SEED.sql` (dữ liệu dùng để báo cáo) | **Bắt buộc** |
+| Sửa `scripts/03b_GiaoDich.sql` (dữ liệu dùng để báo cáo) | **Bắt buộc** |
 | Sửa lỗi chính tả trong file `.md` | Không cần, nhưng vẫn nên nhắn nhóm |
 | Sửa comment trong SQL | Không cần |
 
@@ -421,7 +425,7 @@ Readme mục 3.4 yêu cầu ≥3 view, một view phải giới hạn cột/dòn
 View này chỉ trả về cột cần thiết cho vai trò `PhucVu`.
 
 ## Đã kiểm tra
-- [ ] Chạy lại toàn bộ chuỗi 01 → 02 → SEED 01 → SEED 02, không lỗi
+- [ ] Chạy lại toàn bộ chuỗi 01 → 02 → 03a → 03b, không lỗi
 - [ ] `SELECT * FROM vw_BanDangSuDung` trả về đúng 5 dòng (5 bàn "Có khách")
 - [ ] Không có thay đổi ngoài phạm vi (không sửa file của người khác)
 
@@ -458,7 +462,7 @@ Người review **không** chỉ đọc code, cần đối chiếu với Readme:
 Xung đột xảy ra khi **hai người sửa cùng một dòng của cùng một file** và Git không tự quyết định được giữ bản nào. Với repo này, xung đột hay gặp ở:
 
 - `sql/02_Bang.sql` — nhiều người cùng thêm bảng/cột.
-- `scripts/01_SEED.sql` — nhiều người cùng thêm dòng dữ liệu vào cuối danh sách `INSERT`.
+- `scripts/03a_DanhMuc.sql` — nhiều người cùng thêm dòng dữ liệu vào cuối danh sách `INSERT`.
 - Bất kỳ file `.md` nào khi cả nhóm cùng sửa tài liệu.
 
 Xung đột **không phải lỗi**. Nó chỉ có nghĩa Git cần con người quyết định.
@@ -527,7 +531,7 @@ git push
 Chạy lại **toàn bộ chuỗi** theo đúng thứ tự, không chạy lẻ:
 
 ```text
-sql/01_CAUHINH_CSDL.sql   →   sql/02_Bang.sql   →   scripts/01_SEED.sql   →   scripts/02_SEED.sql
+sql/01_CAUHINH_CSDL.sql   →   sql/02_Bang.sql   →   scripts/03a_DanhMuc.sql   →   scripts/03b_GiaoDich.sql
 ```
 
 > **Cảnh báo thực tế:** `sql/01_CAUHINH_CSDL.sql` **xóa CSDL `QL_CAFE_NHAHANG`** rồi tạo lại, tên CSDL được viết cứng. Bạn không thể vừa kiểm chứng an toàn vừa giữ dữ liệu cũ. Hai cách xử lý:
@@ -555,8 +559,9 @@ Phần này là đặc thù của dự án CSDL: code không "build" ra sản ph
 ```text
 1. sql/01_CAUHINH_CSDL.sql      Tạo CSDL rỗng QL_CAFE_NHAHANG
 2. sql/02_Bang.sql              Tạo 10 bảng + ràng buộc + chỉ mục
-3. scripts/01_SEED.sql          Nạp dữ liệu danh mục
-4. scripts/02_SEED.sql          Sinh hóa đơn + chi tiết, tính TongTien
+3. scripts/03a_DanhMuc.sql      Nạp dữ liệu danh mục
+4. scripts/03b_GiaoDich.sql     Sinh hóa đơn + chi tiết, tính TongTien
+5. scripts/04_TEST_VI_PHAM.sql  Kiểm chứng ràng buộc (chạy sau cùng, tùy chọn)
 ```
 
 Vì sao không được đổi:
@@ -564,10 +569,11 @@ Vì sao không được đổi:
 | Script | Phụ thuộc vào | Nếu chạy sai thứ tự |
 |---|---|---|
 | `02_Bang.sql` | `01_CAUHINH_CSDL.sql` đã tạo CSDL; `USE QL_CAFE_NHAHANG` ở dòng 1 | Lỗi `Cannot open database` |
-| `01_SEED.sql` | 10 bảng đã tồn tại; IDENTITY bắt đầu từ 1 | Khóa ngoại sai, `MaMon` lệch so với `MonAn`/`ThucUong`/`DinhLuong` |
-| `02_SEED.sql` | Dữ liệu danh mục đã có; ít nhất 1 nhân viên `PhucVu`, ≥1 món `DangBan = 1` | `THROW 50001/50002/50003` — script tự dừng và báo lỗi |
+| `03a_DanhMuc.sql` | 10 bảng đã tồn tại; IDENTITY bắt đầu từ 1 | Khóa ngoại sai, `MaMon` lệch so với `MonAn`/`ThucUong`/`DinhLuong` |
+| `03b_GiaoDich.sql` | Dữ liệu danh mục đã có; ít nhất 1 nhân viên `PhucVu`, ≥1 món `DangBan = 1` | `THROW 50001/50002/50003` — script tự dừng và báo lỗi |
+| `04_TEST_VI_PHAM.sql` | `03b` đã nạp xong (cần dữ liệu để thử trùng khóa) | `THROW 51001` — script tự dừng |
 
-Điểm đáng chú ý: **`01_SEED.sql` gán `MaMon` bằng số cứng** (1..18 cho `MonAn`, 19..36 cho `ThucUong`, và `DinhLuong` tham chiếu 1..36). Nếu chạy `01_SEED.sql` khi bảng `Mon` **đã có dữ liệu**, `IDENTITY` sẽ bắt đầu từ số khác 1, toàn bộ tham chiếu cứng này trỏ sai món. Vì vậy: **luôn nạp dữ liệu trên CSDL vừa tạo lại từ đầu.**
+Điểm đáng chú ý: **`03a_DanhMuc.sql` gán `MaMon` bằng số cứng** (1..18 cho `MonAn`, 19..36 cho `ThucUong`, và `DinhLuong` tham chiếu 1..36). Nếu chạy `03a_DanhMuc.sql` khi bảng `Mon` **đã có dữ liệu**, `IDENTITY` sẽ bắt đầu từ số khác 1, toàn bộ tham chiếu cứng này trỏ sai món. Vì vậy: **luôn nạp dữ liệu trên CSDL vừa tạo lại từ đầu.**
 
 ### 10.2. Quy tắc sửa `sql/02_Bang.sql`
 
@@ -582,8 +588,8 @@ File này là "xương sống" — mọi người đều phụ thuộc. Khi sử
 
 ### 10.3. Quy tắc sửa `scripts/*.sql`
 
-1. **Không chạy lại trên CSDL đã có dữ liệu.** Hai script này **không tự xóa** dữ liệu cũ và **không kiểm tra trùng**. Chạy `02_SEED.sql` hai lần trên cùng CSDL sẽ tạo thêm 1.500 hóa đơn nữa, và mỗi bàn "Có khách" sẽ có **2 hóa đơn Mở** — vi phạm nghiệp vụ (hiện **chưa có** ràng buộc nào chặn điều này).
-2. **Giữ đúng số dòng cam kết.** `02_SEED.sql` có các biến `@TongHD = 1500`, `@TongCT = 5000`, `@SoHDTrong = 5` và kiểm tra chéo ở cuối. Nếu sửa một biến mà không tính lại các biến liên quan, script sẽ `THROW 50007` / `THROW 50011`.
+1. **Không chạy lại trên CSDL đã có dữ liệu.** `03b_GiaoDich.sql` đã có chốt chặn: nếu `HoaDon` đã có dòng, script `THROW 50012` và dừng **trước khi** ghi gì. Không có chốt này (bản cũ) thì chạy 2 lần sẽ ra 3.000 hóa đơn và mỗi bàn "Có khách" có 2 hóa đơn Mở — sai nghiệp vụ.
+2. **Giữ đúng các bất biến đã cam kết.** `03b_GiaoDich.sql` dùng `@TongHD = 1500`, `@SoHDTrong = 5`, `@SoMonToiDa` (1–6 món/hóa đơn) và tự kiểm tra ngay trong transaction: sai thì `THROW 50013` (số hóa đơn rỗng) hoặc `THROW 50014` (bất biến "bàn có khách ↔ đúng 1 hóa đơn Mở") và **rollback toàn bộ**. Số dòng `ChiTietHoaDon` **không cố định** (khoảng 5.300, phụ thuộc ngẫu nhiên) — đừng hard-code con số này vào báo cáo.
 3. **Dữ liệu sinh ra là ngẫu nhiên.** Script dùng `CHECKSUM(NEWID())` nên **mỗi lần chạy cho kết quả khác nhau**. Hệ quả cho nhóm:
    - Số liệu trong báo cáo ("top 10 món bán chạy", "doanh thu tháng") **sẽ khác nhau giữa các máy**.
    - Đừng so sánh kết quả truy vấn của mình với bạn rồi kết luận "sai". Chỉ so sánh **cấu trúc** kết quả (số cột, kiểu dữ liệu, thứ tự sắp xếp).
@@ -592,7 +598,7 @@ File này là "xương sống" — mọi người đều phụ thuộc. Khi sử
 
 ### 10.4. Nhất quán dữ liệu dẫn xuất: `HoaDon.TongTien`
 
-`HoaDon.TongTien` là **dữ liệu dẫn xuất** — nó phải luôn bằng `SUM(ChiTietHoaDon.SoLuong * DonGia)`. Giá trị này được tính bằng một câu `UPDATE` ở BƯỚC 4 của `scripts/02_SEED.sql`.
+`HoaDon.TongTien` là **dữ liệu dẫn xuất** — nó phải luôn bằng `SUM(ChiTietHoaDon.SoLuong * DonGia)`. Giá trị này được tính bằng một câu `UPDATE` ở BƯỚC 4 của `scripts/03b_GiaoDich.sql`.
 
 > **Quy tắc:** nếu bạn thêm/sửa/xóa dòng trong `ChiTietHoaDon`, **bắt buộc** phải tính lại `TongTien` của hóa đơn liên quan. Hiện **chưa có trigger** tự làm việc này (Readme xếp trigger vào M3).
 
@@ -670,11 +676,12 @@ Việc giữ đúng tiền tố quan trọng vì `02_Bang.sql` đang dùng chín
 
 1. Chạy `sql/01_CAUHINH_CSDL.sql` → không lỗi.
 2. Chạy `sql/02_Bang.sql` → không lỗi.
-3. Chạy `scripts/01_SEED.sql` → 3 bảng kiểm tra cuối trả về đúng: `11 / 15 / 12 / 28 / 36 / 18 / 18 / 130`.
-4. Chạy `scripts/02_SEED.sql` → `HoaDon = 1500`, `ChiTietHoaDon = 5000`, số hóa đơn rỗng `= 5`, mọi câu kiểm tra lỗi trả về **rỗng**.
-5. Đối chiếu thay đổi của bạn: `git diff master --stat` chỉ ra đúng những file bạn định sửa.
+3. Chạy `scripts/03a_DanhMuc.sql` → câu kiểm tra cuối trả về `11 / 15 / 12 / 28 / 36 / 18 / 18 / 130`.
+4. Chạy `scripts/03b_GiaoDich.sql` → `HoaDon = 1500`, trạng thái `1390 / 5 / 105`, hóa đơn rỗng `= 5`, `ChiTietHoaDon` khoảng **5.300** (không cố định), mọi câu kiểm tra lỗi (7.4–7.7) trả về **rỗng hoặc 0**.
+5. Chạy `scripts/04_TEST_VI_PHAM.sql` → tổng hợp cuối phải là `10 lần thử / 10 bị chặn / 0 lọt`, và `KetLuan = ĐẠT`.
+6. Đối chiếu thay đổi của bạn: `git diff master --stat` chỉ ra đúng những file bạn định sửa.
 
-> **Chưa kiểm chứng bởi tài liệu này:** các con số ở bước 3–4 là **giá trị mà script tự khai báo** trong comment và biến, không phải kết quả đã chạy thật trên môi trường này. Lần chạy đầu tiên của nhóm nên xác nhận lại và ghi vào nhật ký.
+> **Đã kiểm chứng ngày 26/10/2026** trên SQL Server 2025 (17.0.1000.7), trong một CSDL tạm: cả 4 script chạy không lỗi, `HoaDon = 1500`, `ChiTietHoaDon = 5308`, `04` chặn đủ 10/10. Con số `ChiTietHoaDon` sẽ khác mỗi lần chạy vì dữ liệu sinh ngẫu nhiên.
 
 ### 11.4. File được và không được commit
 
@@ -759,7 +766,7 @@ Nếu bạn đổi cấu trúc bảng hoặc thứ tự chạy script, **phải*
 | **`CREATE DATABASE` lỗi "Directory lookup ... error 2"** | Thiếu thư mục | Tạo `C:\SQLData` bằng quyền Administrator (mục 10.6) |
 | **`DROP TABLE` lỗi "referenced by a FOREIGN KEY constraint"** | Thứ tự xóa sai | Sửa thứ tự `DROP` trong `02_Bang.sql`: con trước, cha sau (mục 10.2) |
 | **`INSERT` bị từ chối bởi `CHECK` constraint** | Ví dụ `TrangThai` sai dấu | Đây là hệ thống hoạt động **đúng**. Kiểm tra chuỗi có `N'...'` và đúng dấu tiếng Việt |
-| **Chạy `02_SEED.sql` lần hai, số hóa đơn thành 3000** | Không có kiểm tra trùng | Tạo lại CSDL từ đầu: chạy lại `01` → `02` → `SEED 01` → `SEED 02` |
+| **Chạy `03b_GiaoDich.sql` lần hai** | Bị chặn: `THROW 50012` — "Bảng HoaDon đã có dữ liệu" | Đúng như thiết kế. Muốn nạp lại: `03_RESET_DB.sql` → `02_Bang.sql` → `03a_DanhMuc.sql` → `03b_GiaoDich.sql` |
 | **Không đẩy được vì `src refspec ... does not match any`** | Tên nhánh gõ sai | `git branch` xem tên thật, rồi push lại đúng tên |
 
 ### 12.1. Ba lệnh phá hủy — đọc kỹ trước khi gõ
@@ -819,7 +826,7 @@ git pull
 git switch -c data/them-nguyen-lieu
 ```
 
-Mở `scripts/01_SEED.sql`, tìm khối `INSERT INTO NguyenLieu` và **thêm dòng vào cuối danh sách** (không chèn giữa, để giảm xung đột với người khác):
+Mở `scripts/03a_DanhMuc.sql`, tìm khối `INSERT INTO NguyenLieu` và **thêm dòng vào cuối danh sách** (không chèn giữa, để giảm xung đột với người khác):
 
 ```sql
     (N'Bột ngọt',   N'kg',  5.00,  2.00,  45000.00),  -- 29
@@ -834,7 +841,7 @@ SELECT COUNT(*) FROM dbo.NguyenLieu;   -- phải là 28 + 5 = 33
 Sau đó:
 
 ```bash
-git add scripts/01_SEED.sql
+git add scripts/03a_DanhMuc.sql
 git commit -m "data(seed): thêm 5 nguyên liệu cho thực đơn mới"
 git push -u origin data/them-nguyen-lieu
 ```
@@ -920,7 +927,7 @@ Nếu chỉ đọc được một đoạn, hãy đọc đoạn này:
 1. **Luôn `git pull` trước khi làm.**
 2. **Luôn làm trên nhánh riêng**, không commit thẳng `master`.
 3. **`git add` từng file**, không `git add .` khi chưa xem `git status`.
-4. **Chạy lại toàn chuỗi 01 → 02 → SEED 01 → SEED 02** trước khi báo xong việc.
+4. **Chạy lại toàn chuỗi 01 → 02 → 03a → 03b** trước khi báo xong việc.
 5. **Không commit** `.mdf`, `.ldf`, `.bak`, mật khẩu, dữ liệu người thật.
 6. **Không dùng `git push --force`** trên `master`.
 

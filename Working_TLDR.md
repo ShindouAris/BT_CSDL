@@ -133,7 +133,7 @@ git merge master          # giải quyết xung đột nếu có
 - [ ] **Tự chạy lại toàn chuỗi script được chưa**
 - [ ] Giải thích được đoạn code nếu bị hỏi
 
-> PR **bắt buộc** khi sửa `sql/02_Bang.sql`, `scripts/02_SEED.sql`, hoặc thêm đối tượng SQL mới.
+> PR **bắt buộc** khi sửa `sql/02_Bang.sql`, `scripts/03b_GiaoDich.sql`, hoặc thêm đối tượng SQL mới.
 
 ---
 
@@ -158,7 +158,7 @@ Kết quả **rỗng** = sạch.
 **Sau khi giải quyết xung đột, bắt buộc chạy lại toàn chuỗi:**
 
 ```text
-sql/01_CAUHINH_CSDL.sql → sql/02_Bang.sql → scripts/01_SEED.sql → scripts/02_SEED.sql
+sql/01_CAUHINH_CSDL.sql → sql/02_Bang.sql → scripts/03a_DanhMuc.sql → scripts/03b_GiaoDich.sql
 ```
 
 > ⚠️ `01_CAUHINH_CSDL.sql` **xóa CSDL `QL_CAFE_NHAHANG`** và tên được viết cứng. Nhắn nhóm trước khi chạy. Muốn kiểm chứng an toàn: copy script ra file tạm (không commit) và đổi tên CSDL thành `QL_CAFE_NHAHANG_TEST`.
@@ -171,10 +171,10 @@ Rối quá thì bỏ: `git merge --abort`.
 
 | Việc | Quy tắc |
 |---|---|
-| **Thứ tự chạy** | `01` → `02` → `SEED 01` → `SEED 02`. Không đổi, không chạy lẻ |
-| **Chạy lại dữ liệu** | `scripts/*.sql` **không tự xóa** và **không chống trùng**. Chạy `02_SEED.sql` lần 2 → 3.000 hóa đơn, mỗi bàn "Có khách" có 2 hóa đơn Mở (sai nghiệp vụ) |
-| **`01_SEED.sql`** | Gán `MaMon` **cứng** 1..36. Chỉ nạp trên CSDL vừa tạo lại từ đầu |
-| **Thêm bảng vào `02_Bang.sql`** | Phải sửa **2 chỗ**: `DROP` ở đầu file (con trước, cha sau) + `CREATE` ở thân file |
+| **Thứ tự chạy** | `01` → `02` → `03a` → `03b` (→ `04` nếu cần kiểm chứng). Không đổi, không chạy lẻ |
+| **Chạy lại dữ liệu** | `03b_GiaoDich.sql` **đã có chốt chặn**: `HoaDon` còn dữ liệu thì `THROW 50012` và dừng trước khi ghi. Muốn nạp lại phải `03_RESET_DB.sql` → `02_Bang.sql` → `03a` → `03b` |
+| **`03a_DanhMuc.sql`** | Gán `MaMon` **cứng** 1..36. Chỉ nạp trên CSDL vừa tạo lại từ đầu |
+| **Thêm bảng vào `02_Bang.sql`** | Phải sửa **2 chỗ**: `DROP` ở đầu file (con trước, cha sau) + `CREATE` ở thân file. Cập nhật cả `03_RESET_DB.sql` |
 | **Đổi tên cột/bảng** | Phải báo cả nhóm — sẽ làm hỏng `scripts/*.sql` và truy vấn của người khác |
 | **`HoaDon.TongTien`** | Là dữ liệu dẫn xuất. Sửa `ChiTietHoaDon` thì **phải tính lại** (hiện chưa có trigger) |
 | **Encoding** | Lưu `.sql` ở **UTF-8 không BOM**. Sửa sang ANSI sẽ hỏng tiếng Việt và `CHECK` sẽ từ chối dữ liệu đúng |
@@ -182,9 +182,9 @@ Rối quá thì bỏ: `git merge --abort`.
 | **Dữ liệu ngẫu nhiên** | `CHECKSUM(NEWID())` → mỗi lần chạy ra số khác. **Không so sánh số liệu giữa các máy** |
 | **Đặt tên** | `vw_` · `sp_` · `fn_` · `trg_` · `IX_`/`UX_` · `PK_`/`FK_`/`CK_`/`DF_` |
 
-**Dữ liệu kỳ vọng sau khi nạp** (giá trị script tự khai báo, cần xác nhận lại ở lần chạy đầu):
+**Dữ liệu kỳ vọng sau khi nạp** (đã đo thật ngày 26/10/2026, SQL Server 2025):
 
-`LoaiMon = 11` · `Ban = 15` · `NhanVien = 12` · `NguyenLieu = 28` · `Mon = 36` · `MonAn = 18` · `ThucUong = 18` · `DinhLuong = 130` · `HoaDon = 1500` · `ChiTietHoaDon = 5000` · hóa đơn rỗng `= 5`
+`LoaiMon = 11` · `Ban = 15` · `NhanVien = 12` · `NguyenLieu = 28` · `Mon = 36` · `MonAn = 18` · `ThucUong = 18` · `DinhLuong = 130` · `HoaDon = 1500` (1390 đã TT / 5 Mở / 105 Hủy) · hóa đơn rỗng `= 5` · `ChiTietHoaDon` **≈ 5.300** (1–6 món/hóa đơn, ngẫu nhiên — không cố định)
 
 ---
 
@@ -193,7 +193,8 @@ Rối quá thì bỏ: `git merge --abort`.
 - [ ] Đang ở **nhánh riêng**, không phải `master`
 - [ ] `git status` — không có file rác (`.mdf`, `.ldf`, `.bak`, `.tmp`, `.vs/`)
 - [ ] `git diff --staged` — đúng những gì mình định gửi
-- [ ] Đã chạy lại `01` → `02` → `SEED 01` → `SEED 02`, không lỗi
+- [ ] Đã chạy lại `01` → `02` → `03a` → `03b` (và `04` nếu có sửa ràng buộc), không lỗi
+- [ ] `04_TEST_VI_PHAM.sql` báo `10/10 bị chặn`, `0 lọt` nếu bạn có sửa schema
 - [ ] Các câu kiểm tra cuối script trả về đúng số dòng, câu kiểm tra lỗi trả về rỗng
 - [ ] Không có mật khẩu thật, không có dữ liệu người thật
 - [ ] Thông điệp commit đúng định dạng mục 4
@@ -220,8 +221,9 @@ Chi tiết: [WORKING.md](WORKING.md) mục 12.
 
 - `sql/01_CAUHINH_CSDL.sql` → **xóa toàn bộ CSDL** rồi tạo lại.
 - `sql/02_Bang.sql` → **xóa toàn bộ 10 bảng** và dữ liệu trong đó.
-- `scripts/02_SEED.sql` → **không chống trùng**, chạy lại sẽ nhân đôi dữ liệu.
-- `scripts/01_SEED.sql` → dùng `MaMon` cứng, chạy sai thời điểm sẽ trỏ sai món.
+- `scripts/03b_GiaoDich.sql` → **đã có chốt chặn** (`THROW 50012`): chạy lại trên CSDL đang có hóa đơn sẽ dừng ngay, không nhân đôi dữ liệu.
+- `scripts/03a_DanhMuc.sql` → dùng `MaMon` cứng, chạy sai thời điểm sẽ trỏ sai món.
+- `scripts/04_TEST_VI_PHAM.sql` → chỉ kiểm chứng ràng buộc, kết thúc bằng `ROLLBACK`, không đổi dữ liệu.
 
 👉 Chạy bất kỳ script nào ở trên: **báo nhóm trước**.
 

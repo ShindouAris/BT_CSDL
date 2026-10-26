@@ -34,8 +34,9 @@ Không có thư mục con, không có file nào khác. → chi tiết: [Explains
 ```text
 1. sql/01_CAUHINH_CSDL.sql
 2. sql/02_Bang.sql
-3. scripts/01_SEED.sql
-4. scripts/02_SEED.sql
+3. scripts/03a_DanhMuc.sql
+4. scripts/03b_GiaoDich.sql
+5. scripts/04_TEST_VI_PHAM.sql   ← tùy chọn, chỉ kiểm chứng ràng buộc
 ```
 
 **Không được đảo.** Lý do ngắn gọn:
@@ -43,8 +44,9 @@ Không có thư mục con, không có file nào khác. → chi tiết: [Explains
 | Script | Cần gì trước | Sai thứ tự → |
 |---|---|---|
 | `02_Bang.sql` | CSDL đã tồn tại (`USE QL_CAFE_NHAHANG`) | `Cannot open database` |
-| `scripts/01_SEED.sql` | 10 bảng tồn tại **và rỗng** (`IDENTITY` từ 1) | `MaMon` lệch → `DinhLuong` trỏ sai món |
-| `scripts/02_SEED.sql` | Dữ liệu danh mục đã có | `THROW 50001/50002/50003`, script dừng |
+| `scripts/03a_DanhMuc.sql` | 10 bảng tồn tại **và rỗng** (`IDENTITY` từ 1) | `MaMon` lệch → `DinhLuong` trỏ sai món |
+| `scripts/03b_GiaoDich.sql` | Dữ liệu danh mục đã có | `THROW 50001/50002/50003`, script dừng |
+| `scripts/04_TEST_VI_PHAM.sql` | `03b` đã nạp xong | `THROW 51001`, script dừng |
 
 → chi tiết: [Explains.md](Explains.md) mục 4
 
@@ -109,8 +111,9 @@ Ban ──< HoaDon ──< ChiTietHoaDon >── Mon
 |---|---|
 | `01_CAUHINH_CSDL.sql` | 🔴 `SINGLE_USER WITH ROLLBACK IMMEDIATE` + **`DROP DATABASE`** → xóa toàn bộ CSDL, đá mọi kết nối khác ra |
 | `02_Bang.sql` | 🔴 **10 lệnh `DROP TABLE`** → xóa toàn bộ bảng và dữ liệu |
-| `scripts/01_SEED.sql` | 🟠 Không xóa dữ liệu cũ, dùng `MaMon` **cứng** → chạy khi bảng không rỗng sẽ hỏng dữ liệu |
-| `scripts/02_SEED.sql` | 🟠 **Không chống trùng** → chạy 2 lần ra **3.000** hóa đơn, mỗi bàn có 2 hóa đơn `Mở` |
+| `scripts/03a_DanhMuc.sql` | 🟠 Không xóa dữ liệu cũ, dùng `MaMon` **cứng** → chạy khi bảng không rỗng sẽ hỏng dữ liệu |
+| `scripts/03b_GiaoDich.sql` | 🟢 **Đã có chốt chặn** (`THROW 50012`): `HoaDon` còn dữ liệu thì dừng ngay, không nhân đôi |
+| `scripts/04_TEST_VI_PHAM.sql` | 🟢 Chỉ kiểm chứng, kết thúc bằng `ROLLBACK` → không đổi dữ liệu |
 
 👉 Chạy bất kỳ script nào ở trên: **báo nhóm trước.**
 
@@ -138,9 +141,9 @@ Ban ──< HoaDon ──< ChiTietHoaDon >── Mon
 
 ---
 
-## 8. Kết quả mong đợi sau khi chạy đủ 4 script
+## 8. Kết quả sau khi chạy đủ 4 script
 
-> Các con số dưới đây là **giá trị script tự khai báo**, chưa được chạy thử và xác nhận trên môi trường này.
+> Số dòng danh mục và `HoaDon` là **cố định**. `ChiTietHoaDon` **dao động** vì mỗi hóa đơn 1–6 món ngẫu nhiên. Số dưới đây **đã đo thật** ngày 26/10/2026 trên SQL Server 2025 (CSDL tạm).
 
 | Bảng | Số dòng |
 |---|---:|
@@ -152,7 +155,8 @@ Ban ──< HoaDon ──< ChiTietHoaDon >── Mon
 | `MonAn` / `ThucUong` | 18 / 18 |
 | `DinhLuong` | 130 |
 | `HoaDon` | 1.500 (5 `Mở`, 1.390 `Đã thanh toán`, 105 `Hủy`) |
-| `ChiTietHoaDon` | 5.000 |
+| `ChiTietHoaDon` | **≈ 5.300** (lần đo: 5.308) |
+| `04_TEST_VI_PHAM` | 10 lần thử → **10 bị chặn, 0 lọt** |
 
 Hóa đơn rỗng: **5** (đều ở trạng thái `Hủy`). Số `Mở` phụ thuộc số bàn `"Có khách"`.
 

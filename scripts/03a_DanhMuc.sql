@@ -1,6 +1,8 @@
 /* =====================================================================
-   CSDL QUẢN LÝ NHÀ HÀNG / QUÁN CÀ PHÊ - SCRIPT NẠP DỮ LIỆU GIẢ LẬP
+   CSDL QUẢN LÝ NHÀ HÀNG / QUÁN CÀ PHÊ — 03a: DỮ LIỆU DANH MỤC
+   (phần 1 của bộ 03_DuLieu; phần 2 là 03b_GiaoDich.sql)
    ---------------------------------------------------------------------
+   - Chạy SAU: sql/01_CAUHINH_CSDL.sql → sql/02_Bang.sql
    - Toàn bộ dữ liệu là HƯ CẤU, không sử dụng thông tin người thật.
    - Chạy trên CSDL rỗng: các cột IDENTITY bắt đầu từ 1.
    - Thứ tự nạp: LoaiMon -> Ban -> NhanVien -> NguyenLieu -> Mon
