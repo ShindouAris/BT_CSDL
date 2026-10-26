@@ -13,7 +13,7 @@ DROP TABLE IF EXISTS Ban;
 DROP TABLE IF EXISTS LoaiMon;
 GO
 
-
+-- Loại Món
 CREATE TABLE LoaiMon (
     MaLoai      INT IDENTITY(1,1) NOT NULL,
     TenLoai     NVARCHAR(50) NOT NULL,
@@ -22,7 +22,7 @@ CREATE TABLE LoaiMon (
     CONSTRAINT UQ_LoaiMon_Ten UNIQUE (TenLoai),
     CONSTRAINT FK_LoaiMon_Cha FOREIGN KEY (MaLoaiCha) REFERENCES LoaiMon(MaLoai)
 );
-
+-- Bàn
 CREATE TABLE Ban (
     MaBan       INT IDENTITY(1,1) NOT NULL,
     TenBan      NVARCHAR(20) NOT NULL,
@@ -33,7 +33,7 @@ CREATE TABLE Ban (
     CONSTRAINT CK_Ban_SucChua CHECK (SucChua > 0),
     CONSTRAINT CK_Ban_TrangThai CHECK (TrangThai IN (N'Trống', N'Có khách', N'Đã đặt'))
 );
-
+-- Nhân Viên
 CREATE TABLE NhanVien (
     MaNV        INT IDENTITY(1,1) NOT NULL,
     HoTen       NVARCHAR(100) NOT NULL,
@@ -42,7 +42,7 @@ CREATE TABLE NhanVien (
     CONSTRAINT PK_NhanVien PRIMARY KEY (MaNV),
     CONSTRAINT CK_NhanVien_ChucVu CHECK (ChucVu IN (N'PhucVu', N'ThuNgan', N'Bep', N'QuanLy'))
 );
-
+-- Nguyên liệu
 CREATE TABLE NguyenLieu (
     MaNL        INT IDENTITY(1,1) NOT NULL,
     TenNL       NVARCHAR(100) NOT NULL,
@@ -58,7 +58,7 @@ CREATE TABLE NguyenLieu (
 GO
 
 -- ---------- 2. Món và chuyên biệt hóa (đồ ăn / thức uống) ----------
-
+-- Món
 CREATE TABLE Mon (
     MaMon       INT IDENTITY(1,1) NOT NULL,
     TenMon      NVARCHAR(100) NOT NULL,
@@ -73,7 +73,7 @@ CREATE TABLE Mon (
     CONSTRAINT CK_Mon_Nhom CHECK (Nhom IN ('A', 'U'))
 );
 
--- Bảng con dùng chung khóa chính với bảng cha
+-- Món Ăn
 CREATE TABLE MonAn (
     MaMon           INT NOT NULL,
     ThoiGianCheBien INT NOT NULL,           -- phút
@@ -82,7 +82,7 @@ CREATE TABLE MonAn (
     CONSTRAINT FK_MonAn_Mon FOREIGN KEY (MaMon) REFERENCES Mon(MaMon),
     CONSTRAINT CK_MonAn_ThoiGian CHECK (ThoiGianCheBien > 0)
 );
-
+-- Thức uống
 CREATE TABLE ThucUong (
     MaMon       INT NOT NULL,
     Size        CHAR(1) NOT NULL CONSTRAINT DF_ThucUong_Size DEFAULT 'M',
@@ -107,8 +107,8 @@ CREATE TABLE DinhLuong (
 );
 GO
 
--- ---------- 4. Giao dịch ----------
-
+-- ---------- 4. Quản lý giao dịch ----------
+-- Hoá đơn
 CREATE TABLE HoaDon (
     MaHD        INT IDENTITY(1,1) NOT NULL,
     MaBan       INT NOT NULL,
@@ -122,7 +122,7 @@ CREATE TABLE HoaDon (
     CONSTRAINT CK_HoaDon_TrangThai CHECK (TrangThai IN (N'Mở', N'Đã thanh toán', N'Hủy')),
     CONSTRAINT CK_HoaDon_TongTien CHECK (TongTien >= 0)
 );
-
+-- CHi tiết hoá đơn 
 CREATE TABLE ChiTietHoaDon (
     MaHD             INT NOT NULL,
     MaMon            INT NOT NULL,
@@ -138,22 +138,14 @@ CREATE TABLE ChiTietHoaDon (
 );
 GO
 
--- (a) Bổ sung CHECK cho định mức tồn
 ALTER TABLE NguyenLieu
     ADD CONSTRAINT CK_NL_DinhMuc CHECK (DinhMucTon >= 0);
 
--- (b) Bổ sung cột mới + DEFAULT
 ALTER TABLE NhanVien
     ADD NgayVaoLam DATE NOT NULL CONSTRAINT DF_NhanVien_NgayVaoLam DEFAULT GETDATE();
 
--- (c) Bổ sung UNIQUE cho số điện thoại (cho phép nhiều NULL bằng chỉ mục có lọc)
 CREATE UNIQUE INDEX UX_NhanVien_SDT ON NhanVien(SoDienThoai) WHERE SoDienThoai IS NOT NULL;
 
--- (d) Sửa ràng buộc: xóa rồi thêm lại với điều kiện chặt hơn (giá bán phải > 0)
 ALTER TABLE Mon DROP CONSTRAINT CK_Mon_GiaBan;
 ALTER TABLE Mon ADD CONSTRAINT CK_Mon_GiaBan CHECK (GiaBan > 0);
-GO
-
--- Kiểm tra: liệt kê các bảng vừa tạo
-SELECT name FROM sys.tables ORDER BY name;
 GO
