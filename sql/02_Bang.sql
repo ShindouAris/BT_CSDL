@@ -14,6 +14,8 @@ DROP TABLE IF EXISTS LoaiMon;
 GO
 
 -- Loại Món
+-- Lý do tại sao lại có loại món? - Để phân loại món ăn, thức uống, ví dụ: Món ăn -> Món chính, Món phụ, Thức uống -> Nước ngọt, Cà phê, Trà, Mở rộng dễ hơn
+-- Cho việc quản lý món ăn, thức uống, ví dụ: Thống kê doanh thu theo loại món, Thống kê nguyên liệu theo loại món, Quản lý giá bán theo loại món
 CREATE TABLE LoaiMon (
     MaLoai      INT IDENTITY(1,1) NOT NULL,
     TenLoai     NVARCHAR(50) NOT NULL,
