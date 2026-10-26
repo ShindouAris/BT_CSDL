@@ -17,7 +17,7 @@ GO
 CREATE TABLE LoaiMon (
     MaLoai      INT IDENTITY(1,1) NOT NULL,
     TenLoai     NVARCHAR(50) NOT NULL,
-    MaLoaiCha   INT NULL,
+    MaLoaiCha   INT NULL, -- Mã loại (Cha) - FK tự tham chiếu hoặc Null nếu là loại gốc
     CONSTRAINT PK_LoaiMon PRIMARY KEY (MaLoai),
     CONSTRAINT UQ_LoaiMon_Ten UNIQUE (TenLoai),
     CONSTRAINT FK_LoaiMon_Cha FOREIGN KEY (MaLoaiCha) REFERENCES LoaiMon(MaLoai)
@@ -99,7 +99,7 @@ GO
 CREATE TABLE DinhLuong (
     MaMon       INT NOT NULL,
     MaNL        INT NOT NULL,
-    SoLuong     DECIMAL(10,2) NOT NULL,     -- lượng nguyên liệu cho 1 phần món
+    SoLuong     DECIMAL(12,3) NOT NULL,     -- lượng nguyên liệu cho 1 phần món
     CONSTRAINT PK_DinhLuong PRIMARY KEY (MaMon, MaNL),
     CONSTRAINT FK_DinhLuong_Mon FOREIGN KEY (MaMon) REFERENCES Mon(MaMon),
     CONSTRAINT FK_DinhLuong_NL FOREIGN KEY (MaNL) REFERENCES NguyenLieu(MaNL),
