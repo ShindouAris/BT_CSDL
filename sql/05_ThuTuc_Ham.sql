@@ -57,7 +57,7 @@ BEGIN
             THROW 50003, N'Không đủ nguyên liệu để chế biến số lượng yêu cầu.', 1;
         END
 
-        -- 4. INSERT hoặc UPDATE ChiTietHoaDon
+        -- 4. INSERT hoặc UPDATE ChiTietHoaDon và trừ kho
         IF EXISTS (
             SELECT 1 FROM ChiTietHoaDon
             WHERE MaHD = @MaHD AND MaMon = @MaMon
@@ -66,6 +66,14 @@ BEGIN
             UPDATE ChiTietHoaDon
             SET    SoLuong = SoLuong + @SoLuong
             WHERE  MaHD = @MaHD AND MaMon = @MaMon;
+
+            -- Khi UPDATE, trigger TR01 (chỉ AFTER INSERT) không kích hoạt
+            -- nên thủ tục tự trừ TonKho cho phần gọi thêm
+            UPDATE nl
+            SET    nl.TonKho = nl.TonKho - dl.SoLuong * @SoLuong
+            FROM   NguyenLieu nl
+            JOIN   DinhLuong  dl ON dl.MaNL = nl.MaNL
+            WHERE  dl.MaMon = @MaMon;
         END
         ELSE
         BEGIN
@@ -73,16 +81,21 @@ BEGIN
             SELECT @MaHD, @MaMon, @SoLuong, m.GiaBan, N'Chờ'
             FROM   Mon m
             WHERE  m.MaMon = @MaMon;
+
+            -- Nếu trigger TR01 (AFTER INSERT) chưa tạo hoặc bị disable,
+            -- thủ tục sẽ tự trừ TonKho để đảm bảo tính toàn vẹn (tránh trừ 2 lần)
+            IF OBJECT_ID(N'dbo.trg_ChiTietHoaDon_KiemTraNguyenLieu', N'TR') IS NULL
+               OR OBJECTPROPERTY(OBJECT_ID(N'dbo.trg_ChiTietHoaDon_KiemTraNguyenLieu'), 'ExecIsTriggerDisabled') = 1
+            BEGIN
+                UPDATE nl
+                SET    nl.TonKho = nl.TonKho - dl.SoLuong * @SoLuong
+                FROM   NguyenLieu nl
+                JOIN   DinhLuong  dl ON dl.MaNL = nl.MaNL
+                WHERE  dl.MaMon = @MaMon;
+            END
         END
 
-        -- 5. Trừ TonKho theo DinhLuong
-        UPDATE nl
-        SET    nl.TonKho = nl.TonKho - dl.SoLuong * @SoLuong
-        FROM   NguyenLieu nl
-        JOIN   DinhLuong  dl ON dl.MaNL = nl.MaNL
-        WHERE  dl.MaMon = @MaMon;
-
-        -- 6. Cập nhật TongTien hóa đơn
+        -- 5. Cập nhật TongTien hóa đơn
         UPDATE hd
         SET    hd.TongTien = (
                    SELECT ISNULL(SUM(ct.SoLuong * ct.DonGia), 0)
@@ -156,15 +169,22 @@ BEGIN
         FROM   HoaDon
         WHERE  MaHD = @MaHD;
 
-        -- 4. Cập nhật TrangThai HĐ
+        -- 4. Cập nhật TrangThai HĐ → 'Đã thanh toán'
+        --    Trigger TR02 (trg_HoaDon_CapNhatBan) sẽ tự động cập nhật
+        --    Ban.TrangThai → 'Trống' khi TrangThai HĐ đổi sang 'Đã thanh toán'.
+        --    Nếu trigger chưa tạo hoặc bị disable, cập nhật Ban thủ công.
         UPDATE HoaDon
         SET    TrangThai = N'Đã thanh toán'
         WHERE  MaHD = @MaHD;
 
-        -- 5. Cập nhật TrangThai bàn → 'Trống'
-        UPDATE Ban
-        SET    TrangThai = N'Trống'
-        WHERE  MaBan = (SELECT MaBan FROM HoaDon WHERE MaHD = @MaHD);
+        -- 5. Đảm bảo bàn về 'Trống' nếu trigger TR02 chưa hoạt động
+        IF OBJECT_ID(N'dbo.trg_HoaDon_CapNhatBan', N'TR') IS NULL
+           OR OBJECTPROPERTY(OBJECT_ID(N'dbo.trg_HoaDon_CapNhatBan'), 'ExecIsTriggerDisabled') = 1
+        BEGIN
+            UPDATE Ban
+            SET    TrangThai = N'Trống'
+            WHERE  MaBan = (SELECT MaBan FROM HoaDon WHERE MaHD = @MaHD);
+        END
 
         COMMIT TRANSACTION;
         PRINT N'[sp_ThanhToan] Thanh toán thành công. MaHD=' + CAST(@MaHD AS NVARCHAR)
@@ -329,14 +349,20 @@ BEGIN
         DEALLOCATE cur_ChiTiet;
 
         -- 3. Cập nhật TrangThai HĐ → 'Hủy'
+        --    Trigger TR02 (trg_HoaDon_CapNhatBan) sẽ tự động cập nhật
+        --    Ban.TrangThai → 'Trống' khi TrangThai HĐ đổi sang 'Hủy'.
         UPDATE HoaDon
         SET    TrangThai = N'Hủy'
         WHERE  MaHD = @MaHD;
 
-        -- 4. Cập nhật TrangThai bàn → 'Trống'
-        UPDATE Ban
-        SET    TrangThai = N'Trống'
-        WHERE  MaBan = (SELECT MaBan FROM HoaDon WHERE MaHD = @MaHD);
+        -- 4. Đảm bảo bàn về 'Trống' nếu trigger TR02 chưa hoạt động
+        IF OBJECT_ID(N'dbo.trg_HoaDon_CapNhatBan', N'TR') IS NULL
+           OR OBJECTPROPERTY(OBJECT_ID(N'dbo.trg_HoaDon_CapNhatBan'), 'ExecIsTriggerDisabled') = 1
+        BEGIN
+            UPDATE Ban
+            SET    TrangThai = N'Trống'
+            WHERE  MaBan = (SELECT MaBan FROM HoaDon WHERE MaHD = @MaHD);
+        END
 
         COMMIT TRANSACTION;
         PRINT N'[sp_HuyHoaDon] Hủy hóa đơn thành công. MaHD=' + CAST(@MaHD AS NVARCHAR);
@@ -400,8 +426,6 @@ BEGIN
         SUM(ct.SoLuong * ct.DonGia)  AS DoanhThu
     FROM   HoaDon         hd
     JOIN   ChiTietHoaDon  ct ON ct.MaHD  = hd.MaHD
-    JOIN   Mon             m  ON m.MaMon  = ct.MaMon
-    JOIN   NhanVien        nv ON nv.MaNV  = hd.MaNV
     WHERE  hd.TrangThai = N'Đã thanh toán'
       AND  YEAR(hd.NgayLap)  = @Nam
       AND  MONTH(hd.NgayLap) BETWEEN @ThangBatDau AND @ThangKetThuc
@@ -518,7 +542,7 @@ RETURNS @KetQua TABLE
 (
     MaMon   INT,
     TenMon  NVARCHAR(100),
-    GiaBan  DECIMAL(14,0),
+    GiaBan  DECIMAL(12,0),
     TenLoai NVARCHAR(100),
     Nhom    CHAR(1),
     DangBan BIT

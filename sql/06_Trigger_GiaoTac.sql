@@ -295,54 +295,75 @@ DELETE FROM Mon WHERE MaMon = 1;
 -- ============================================================
 -- GT01: Giao tác gọi món — thành công và thất bại
 -- Kịch bản:
---   Gọi 2 món cho hóa đơn đang 'Mở'.
+--   Tạo 1 hóa đơn mới (chắc chắn trống) rồi gọi 2 món.
 --   - Kịch bản A (thành công): cả 2 món đủ nguyên liệu → COMMIT
 --   - Kịch bản B (thất bại):  món thứ 2 thiếu nguyên liệu → ROLLBACK
 --     toàn bộ (kể cả món 1 đã insert thành công trước đó)
 -- ============================================================
 
--- ============================================================
--- GT01-A: THÀNH CÔNG — cả 2 món đủ nguyên liệu
--- ============================================================
-PRINT N'';
-PRINT N'=== GT01-A: Gọi 2 món — THÀNH CÔNG ===';
+-- Tạo hóa đơn mới trên bàn trống để tránh xung đột với dữ liệu seed
+DECLARE @GT01_MaHD INT;
+DECLARE @GT01_MaBan INT;
 
--- Trạng thái trước
-PRINT N'--- Trước giao tác ---';
-SELECT nl.MaNL, nl.TenNL, nl.TonKho
-FROM   NguyenLieu nl
-WHERE  nl.MaNL IN (
-           SELECT dl.MaNL FROM DinhLuong dl WHERE dl.MaMon IN (1, 2)
-       );
-SELECT * FROM ChiTietHoaDon WHERE MaHD = 1;
+-- Tìm bàn đang 'Trống' đầu tiên
+SELECT TOP 1 @GT01_MaBan = MaBan FROM Ban WHERE TrangThai = N'Trống' ORDER BY MaBan;
 
-BEGIN TRY
-    BEGIN TRANSACTION;
+IF @GT01_MaBan IS NULL
+BEGIN
+    PRINT N'[GT01] SKIP — Không có bàn trống để demo. Chạy lại sau khi thanh toán bớt hóa đơn.';
+END
+ELSE
+BEGIN
+    -- Mở hóa đơn mới
+    INSERT INTO HoaDon (MaBan, MaNV, NgayLap, TrangThai, TongTien)
+    VALUES (@GT01_MaBan, 1, GETDATE(), N'Mở', 0);
+    SET @GT01_MaHD = SCOPE_IDENTITY();
 
-    -- Gọi món 1
-    INSERT INTO ChiTietHoaDon(MaHD, MaMon, SoLuong, DonGia, TrangThaiCheBien)
-    VALUES (1, 1, 1, 50000, N'Chờ');
+    UPDATE Ban SET TrangThai = N'Có khách' WHERE MaBan = @GT01_MaBan;
 
-    -- Gọi món 2
-    INSERT INTO ChiTietHoaDon(MaHD, MaMon, SoLuong, DonGia, TrangThaiCheBien)
-    VALUES (1, 2, 2, 35000, N'Chờ');
+    -- ============================================================
+    -- GT01-A: THÀNH CÔNG — cả 2 món đủ nguyên liệu
+    -- ============================================================
+    PRINT N'';
+    PRINT N'=== GT01-A: Gọi 2 món — THÀNH CÔNG (MaHD=' + CAST(@GT01_MaHD AS NVARCHAR) + N') ===';
 
-    COMMIT TRANSACTION;
-    PRINT N'[GT01-A] COMMIT thành công — 2 món đã được ghi nhận.';
-END TRY
-BEGIN CATCH
-    IF @@TRANCOUNT > 0 ROLLBACK TRANSACTION;
-    PRINT N'[GT01-A] LỖI: ' + ERROR_MESSAGE();
-END CATCH;
+    -- Trạng thái trước
+    PRINT N'--- Trước giao tác ---';
+    SELECT nl.MaNL, nl.TenNL, nl.TonKho
+    FROM   NguyenLieu nl
+    WHERE  nl.MaNL IN (
+               SELECT dl.MaNL FROM DinhLuong dl WHERE dl.MaMon IN (1, 2)
+           );
+    SELECT * FROM ChiTietHoaDon WHERE MaHD = @GT01_MaHD;
 
--- Trạng thái sau
-PRINT N'--- Sau giao tác (GT01-A) ---';
-SELECT nl.MaNL, nl.TenNL, nl.TonKho
-FROM   NguyenLieu nl
-WHERE  nl.MaNL IN (
-           SELECT dl.MaNL FROM DinhLuong dl WHERE dl.MaMon IN (1, 2)
-       );
-SELECT * FROM ChiTietHoaDon WHERE MaHD = 1;
+    BEGIN TRY
+        BEGIN TRANSACTION;
+
+        -- Gọi món 1
+        INSERT INTO ChiTietHoaDon(MaHD, MaMon, SoLuong, DonGia, TrangThaiCheBien)
+        VALUES (@GT01_MaHD, 1, 1, 50000, N'Chờ');
+
+        -- Gọi món 2
+        INSERT INTO ChiTietHoaDon(MaHD, MaMon, SoLuong, DonGia, TrangThaiCheBien)
+        VALUES (@GT01_MaHD, 2, 2, 35000, N'Chờ');
+
+        COMMIT TRANSACTION;
+        PRINT N'[GT01-A] COMMIT thành công — 2 món đã được ghi nhận.';
+    END TRY
+    BEGIN CATCH
+        IF @@TRANCOUNT > 0 ROLLBACK TRANSACTION;
+        PRINT N'[GT01-A] LỖI: ' + ERROR_MESSAGE();
+    END CATCH;
+
+    -- Trạng thái sau
+    PRINT N'--- Sau giao tác (GT01-A) ---';
+    SELECT nl.MaNL, nl.TenNL, nl.TonKho
+    FROM   NguyenLieu nl
+    WHERE  nl.MaNL IN (
+               SELECT dl.MaNL FROM DinhLuong dl WHERE dl.MaMon IN (1, 2)
+           );
+    SELECT * FROM ChiTietHoaDon WHERE MaHD = @GT01_MaHD;
+END
 GO
 
 -- ============================================================
@@ -351,49 +372,82 @@ GO
 PRINT N'';
 PRINT N'=== GT01-B: Gọi 2 món — THẤT BẠI (thiếu NL ở món 2) ===';
 
--- Giả lập thiếu nguyên liệu cho món 2
-UPDATE NguyenLieu
-SET    TonKho = 0
-WHERE  MaNL IN (SELECT MaNL FROM DinhLuong WHERE MaMon = 2);
+-- Tạo hóa đơn mới cho GT01-B
+DECLARE @GT01B_MaHD INT;
+DECLARE @GT01B_MaBan INT;
 
--- Trạng thái trước
-PRINT N'--- Trước giao tác ---';
-SELECT nl.MaNL, nl.TenNL, nl.TonKho
-FROM   NguyenLieu nl
-WHERE  nl.MaNL IN (
-           SELECT dl.MaNL FROM DinhLuong dl WHERE dl.MaMon IN (1, 2)
-       );
-SELECT COUNT(*) AS SoDongChiTiet FROM ChiTietHoaDon WHERE MaHD = 1;
+SELECT TOP 1 @GT01B_MaBan = MaBan FROM Ban WHERE TrangThai = N'Trống' ORDER BY MaBan;
 
-BEGIN TRY
-    BEGIN TRANSACTION;
+IF @GT01B_MaBan IS NULL
+BEGIN
+    PRINT N'[GT01-B] SKIP — Không có bàn trống để demo.';
+END
+ELSE
+BEGIN
+    INSERT INTO HoaDon (MaBan, MaNV, NgayLap, TrangThai, TongTien)
+    VALUES (@GT01B_MaBan, 1, GETDATE(), N'Mở', 0);
+    SET @GT01B_MaHD = SCOPE_IDENTITY();
 
-    -- Gọi món 1 — sẽ thành công
-    INSERT INTO ChiTietHoaDon(MaHD, MaMon, SoLuong, DonGia, TrangThaiCheBien)
-    VALUES (1, 1, 1, 50000, N'Chờ');
+    UPDATE Ban SET TrangThai = N'Có khách' WHERE MaBan = @GT01B_MaBan;
 
-    PRINT N'[GT01-B] Món 1 insert xong (chưa commit).';
+    -- Lưu TonKho gốc của nguyên liệu món 2 để khôi phục sau
+    DECLARE @TonKhoBackup TABLE (MaNL INT, TonKhoGoc DECIMAL(12,2));
+    INSERT INTO @TonKhoBackup
+    SELECT nl.MaNL, nl.TonKho
+    FROM   NguyenLieu nl
+    WHERE  nl.MaNL IN (SELECT MaNL FROM DinhLuong WHERE MaMon = 2);
 
-    -- Gọi món 2 — trigger sẽ THROW lỗi
-    INSERT INTO ChiTietHoaDon(MaHD, MaMon, SoLuong, DonGia, TrangThaiCheBien)
-    VALUES (1, 2, 2, 35000, N'Chờ');
+    -- Giả lập thiếu nguyên liệu cho món 2
+    UPDATE NguyenLieu
+    SET    TonKho = 0
+    WHERE  MaNL IN (SELECT MaNL FROM DinhLuong WHERE MaMon = 2);
 
-    COMMIT TRANSACTION;
-    PRINT N'[GT01-B] COMMIT — (không nên đến đây).';
-END TRY
-BEGIN CATCH
-    IF @@TRANCOUNT > 0 ROLLBACK TRANSACTION;
-    PRINT N'[GT01-B] ROLLBACK — Lỗi: ' + ERROR_MESSAGE();
-END CATCH;
+    -- Trạng thái trước
+    PRINT N'--- Trước giao tác ---';
+    SELECT nl.MaNL, nl.TenNL, nl.TonKho
+    FROM   NguyenLieu nl
+    WHERE  nl.MaNL IN (
+               SELECT dl.MaNL FROM DinhLuong dl WHERE dl.MaMon IN (1, 2)
+           );
+    SELECT COUNT(*) AS SoDongChiTiet FROM ChiTietHoaDon WHERE MaHD = @GT01B_MaHD;
 
--- Trạng thái sau: TonKho và ChiTietHoaDon phải về trạng thái ban đầu
-PRINT N'--- Sau ROLLBACK (GT01-B) — kỳ vọng: TonKho không đổi, không có dòng ChiTiet mới ---';
-SELECT nl.MaNL, nl.TenNL, nl.TonKho
-FROM   NguyenLieu nl
-WHERE  nl.MaNL IN (
-           SELECT dl.MaNL FROM DinhLuong dl WHERE dl.MaMon IN (1, 2)
-       );
-SELECT COUNT(*) AS SoDongChiTiet FROM ChiTietHoaDon WHERE MaHD = 1;
+    BEGIN TRY
+        BEGIN TRANSACTION;
+
+        -- Gọi món 1 — sẽ thành công
+        INSERT INTO ChiTietHoaDon(MaHD, MaMon, SoLuong, DonGia, TrangThaiCheBien)
+        VALUES (@GT01B_MaHD, 1, 1, 50000, N'Chờ');
+
+        PRINT N'[GT01-B] Món 1 insert xong (chưa commit).';
+
+        -- Gọi món 2 — trigger sẽ THROW lỗi
+        INSERT INTO ChiTietHoaDon(MaHD, MaMon, SoLuong, DonGia, TrangThaiCheBien)
+        VALUES (@GT01B_MaHD, 2, 2, 35000, N'Chờ');
+
+        COMMIT TRANSACTION;
+        PRINT N'[GT01-B] COMMIT — (không nên đến đây).';
+    END TRY
+    BEGIN CATCH
+        IF @@TRANCOUNT > 0 ROLLBACK TRANSACTION;
+        PRINT N'[GT01-B] ROLLBACK — Lỗi: ' + ERROR_MESSAGE();
+    END CATCH;
+
+    -- Trạng thái sau: ChiTietHoaDon phải không có dòng mới (rollback)
+    PRINT N'--- Sau ROLLBACK (GT01-B) — kỳ vọng: TonKho không đổi, không có dòng ChiTiet mới ---';
+    SELECT nl.MaNL, nl.TenNL, nl.TonKho
+    FROM   NguyenLieu nl
+    WHERE  nl.MaNL IN (
+               SELECT dl.MaNL FROM DinhLuong dl WHERE dl.MaMon IN (1, 2)
+           );
+    SELECT COUNT(*) AS SoDongChiTiet FROM ChiTietHoaDon WHERE MaHD = @GT01B_MaHD;
+
+    -- Khôi phục TonKho gốc cho nguyên liệu món 2
+    UPDATE nl
+    SET    nl.TonKho = bk.TonKhoGoc
+    FROM   NguyenLieu nl
+    JOIN   @TonKhoBackup bk ON bk.MaNL = nl.MaNL;
+    PRINT N'[GT01-B] Đã khôi phục TonKho gốc cho nguyên liệu món 2.';
+END
 GO
 
 

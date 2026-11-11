@@ -150,9 +150,12 @@ GRANT SELECT ON OBJECT::dbo.v_MonDangBan TO role_Bep;
 GRANT SELECT (MaHD, MaMon, SoLuong, TrangThaiCheBien)
     ON OBJECT::dbo.ChiTietHoaDon TO role_Bep;
 
--- SELECT cột cần thiết của Mon (xem tên món và thời gian chế biến)
-GRANT SELECT (MaMon, TenMon, ThoiGianCheBien)
+-- SELECT cột cần thiết của Mon (xem tên món) và MonAn (xem thời gian chế biến, độ cay)
+GRANT SELECT (MaMon, TenMon)
     ON OBJECT::dbo.Mon TO role_Bep;
+
+GRANT SELECT (MaMon, ThoiGianCheBien, CayHayKhong)
+    ON OBJECT::dbo.MonAn TO role_Bep;
 
 -- UPDATE trạng thái chế biến
 GRANT UPDATE (TrangThaiCheBien) ON OBJECT::dbo.ChiTietHoaDon TO role_Bep;
@@ -258,8 +261,8 @@ GO
 
     -- Phải bị từ chối: INSERT vào Mon
     BEGIN TRY
-        INSERT INTO dbo.Mon (TenMon, MaLoai, Gia, TrangThai)
-        VALUES (N'Test', 1, 10000, N'DangBan');
+        INSERT INTO dbo.Mon (TenMon, MaLoai, GiaBan, Nhom, DangBan)
+        VALUES (N'Món Test Quyền', 1, 10000, 'A', 1);
         PRINT N'[FAIL] user_thungan INSERT được Mon — phải bị từ chối!';
     END TRY
     BEGIN CATCH
@@ -333,7 +336,7 @@ GO
 
     -- Phải thành công: execute stored procedure thống kê
     BEGIN TRY
-        EXEC dbo.sp_ThongKeDoanhThu;
+        EXEC dbo.sp_ThongKeDoanhThu @Nam = 2026;
         PRINT N'[OK]   user_quanly chạy được sp_ThongKeDoanhThu.';
     END TRY
     BEGIN CATCH
@@ -444,8 +447,8 @@ GO
 RESTORE DATABASE QL_CAFE_RESTORE
 FROM DISK = N'C:\SQLBackup\QL_CAFE_NHAHANG_Full.bak'
 WITH
-    MOVE N'QL_CAFE_NHAHANG'      TO N'C:\SQLData\QL_CAFE_RESTORE.mdf',
-    MOVE N'QL_CAFE_NHAHANG_log'  TO N'C:\SQLData\QL_CAFE_RESTORE_log.ldf',
+    MOVE N'QL_CAFE_Data'      TO N'C:\SQLData\QL_CAFE_RESTORE.mdf',
+    MOVE N'QL_CAFE_Log'       TO N'C:\SQLData\QL_CAFE_RESTORE_log.ldf',
     NORECOVERY,                              -- giữ trạng thái restoring để áp Differential/Log tiếp
     REPLACE,                                 -- ghi đè nếu CSDL đích đã tồn tại
     STATS = 10;

@@ -70,7 +70,7 @@ WHERE hd.NgayLap >= DATEADD(DAY, -7, GETDATE())
 ORDER BY hd.NgayLap DESC;
 GO
 
--- Q05: Danh sách món cùng tên loại món (INNER JOIN)
+-- Q05: Danh sách món cùng tên loại món (INNER JOIN & LEFT JOIN cha)
 -- Kết hợp bảng Mon, LoaiMon (và LoaiMon cha nếu có)
 SELECT
     m.MaMon,
@@ -82,8 +82,8 @@ SELECT
     m.DangBan
 FROM Mon m
     INNER JOIN LoaiMon lm      ON m.MaLoai = lm.MaLoai
-    INNER JOIN LoaiMon lmcha   ON lm.MaLoaiCha = lmcha.MaLoai
-ORDER BY lmcha.TenLoai, lm.TenLoai, m.TenMon;
+    LEFT  JOIN LoaiMon lmcha   ON lm.MaLoaiCha = lmcha.MaLoai
+ORDER BY ISNULL(lmcha.TenLoai, lm.TenLoai), lm.TenLoai, m.TenMon;
 GO
 
 -- Q06: Tất cả bàn và hóa đơn đang mở tương ứng (LEFT JOIN — bàn không có hóa đơn vẫn hiện)
@@ -263,22 +263,24 @@ FROM (
 ORDER BY PhanLoai, MaMon;
 GO
 
--- Q16: Nhân viên có hóa đơn cả trong nhóm PhucVu VÀ ThuNgan (INTERSECT)
--- Tìm MaNV xuất hiện trong hóa đơn do PhucVu lập GIAO với do ThuNgan lập
-SELECT nv.MaNV, nv.HoTen, nv.ChucVu, nv.SoDienThoai
-FROM NhanVien nv
-WHERE nv.MaNV IN (
-    SELECT hd1.MaNV
-    FROM HoaDon hd1
+-- Q16: Món xuất hiện trong cả hóa đơn do nhân viên PhucVu lập VÀ do ThuNgan lập (INTERSECT)
+-- Tìm các món vừa được bán trong các hóa đơn do Phục vụ lập GIAO với hóa đơn do Thu ngân lập
+SELECT m.MaMon, m.TenMon, m.GiaBan, m.Nhom
+FROM Mon m
+WHERE m.MaMon IN (
+    SELECT ct1.MaMon
+    FROM ChiTietHoaDon ct1
+        INNER JOIN HoaDon hd1   ON ct1.MaHD = hd1.MaHD
         INNER JOIN NhanVien nv1 ON hd1.MaNV = nv1.MaNV
     WHERE nv1.ChucVu = N'PhucVu'
     INTERSECT
-    SELECT hd2.MaNV
-    FROM HoaDon hd2
+    SELECT ct2.MaMon
+    FROM ChiTietHoaDon ct2
+        INNER JOIN HoaDon hd2   ON ct2.MaHD = hd2.MaHD
         INNER JOIN NhanVien nv2 ON hd2.MaNV = nv2.MaNV
     WHERE nv2.ChucVu = N'ThuNgan'
 )
-ORDER BY nv.MaNV;
+ORDER BY m.MaMon;
 GO
 
 -- Q17: CTE đệ quy — đường dẫn đầy đủ của cây LoaiMon (cha → con → cháu)
