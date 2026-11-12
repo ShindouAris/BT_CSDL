@@ -33,7 +33,7 @@ BEGIN
             SELECT 1 FROM HoaDon WHERE MaHD = @MaHD AND TrangThai = N'Mở'
         )
         BEGIN
-            THROW 50001, N'Hóa đơn không tồn tại hoặc không ở trạng thái Mở.', 1;
+            ;THROW 50001, N'Hóa đơn không tồn tại hoặc không ở trạng thái Mở.', 1;
         END
 
         -- 2. Kiểm tra món đang bán
@@ -41,7 +41,7 @@ BEGIN
             SELECT 1 FROM Mon WHERE MaMon = @MaMon AND DangBan = 1
         )
         BEGIN
-            THROW 50002, N'Món không tồn tại hoặc hiện không được bán.', 1;
+            ;THROW 50002, N'Món không tồn tại hoặc hiện không được bán.', 1;
         END
 
         -- 3. Kiểm tra nguyên liệu đủ cho SoLuong phần
@@ -54,10 +54,10 @@ BEGIN
               AND  nl.TonKho - dl.SoLuong * @SoLuong < 0
         )
         BEGIN
-            THROW 50003, N'Không đủ nguyên liệu để chế biến số lượng yêu cầu.', 1;
+            ;THROW 50003, N'Không đủ nguyên liệu để chế biến số lượng yêu cầu.', 1;
         END
 
-        -- 4. INSERT hoặc UPDATE ChiTietHoaDon và trừ kho
+        -- 4. INSERT hoặc UPDATE ChiTietHoaDon
         IF EXISTS (
             SELECT 1 FROM ChiTietHoaDon
             WHERE MaHD = @MaHD AND MaMon = @MaMon
@@ -66,14 +66,6 @@ BEGIN
             UPDATE ChiTietHoaDon
             SET    SoLuong = SoLuong + @SoLuong
             WHERE  MaHD = @MaHD AND MaMon = @MaMon;
-
-            -- Khi UPDATE, trigger TR01 (chỉ AFTER INSERT) không kích hoạt
-            -- nên thủ tục tự trừ TonKho cho phần gọi thêm
-            UPDATE nl
-            SET    nl.TonKho = nl.TonKho - dl.SoLuong * @SoLuong
-            FROM   NguyenLieu nl
-            JOIN   DinhLuong  dl ON dl.MaNL = nl.MaNL
-            WHERE  dl.MaMon = @MaMon;
         END
         ELSE
         BEGIN
@@ -81,21 +73,16 @@ BEGIN
             SELECT @MaHD, @MaMon, @SoLuong, m.GiaBan, N'Chờ'
             FROM   Mon m
             WHERE  m.MaMon = @MaMon;
-
-            -- Nếu trigger TR01 (AFTER INSERT) chưa tạo hoặc bị disable,
-            -- thủ tục sẽ tự trừ TonKho để đảm bảo tính toàn vẹn (tránh trừ 2 lần)
-            IF OBJECT_ID(N'dbo.trg_ChiTietHoaDon_KiemTraNguyenLieu', N'TR') IS NULL
-               OR OBJECTPROPERTY(OBJECT_ID(N'dbo.trg_ChiTietHoaDon_KiemTraNguyenLieu'), 'ExecIsTriggerDisabled') = 1
-            BEGIN
-                UPDATE nl
-                SET    nl.TonKho = nl.TonKho - dl.SoLuong * @SoLuong
-                FROM   NguyenLieu nl
-                JOIN   DinhLuong  dl ON dl.MaNL = nl.MaNL
-                WHERE  dl.MaMon = @MaMon;
-            END
         END
 
-        -- 5. Cập nhật TongTien hóa đơn
+        -- 5. Trừ TonKho theo DinhLuong
+        UPDATE nl
+        SET    nl.TonKho = nl.TonKho - dl.SoLuong * @SoLuong
+        FROM   NguyenLieu nl
+        JOIN   DinhLuong  dl ON dl.MaNL = nl.MaNL
+        WHERE  dl.MaMon = @MaMon;
+
+        -- 6. Cập nhật TongTien hóa đơn
         UPDATE hd
         SET    hd.TongTien = (
                    SELECT ISNULL(SUM(ct.SoLuong * ct.DonGia), 0)
@@ -112,7 +99,7 @@ BEGIN
     END TRY
     BEGIN CATCH
         IF @@TRANCOUNT > 0 ROLLBACK TRANSACTION;
-        THROW; -- ném lại lỗi để caller biết
+        ;THROW; -- ném lại lỗi để caller biết
     END CATCH
 END
 GO
@@ -153,7 +140,7 @@ BEGIN
             SELECT 1 FROM HoaDon WHERE MaHD = @MaHD AND TrangThai = N'Mở'
         )
         BEGIN
-            THROW 50010, N'Hóa đơn không tồn tại hoặc không ở trạng thái Mở.', 1;
+            ;THROW 50010, N'Hóa đơn không tồn tại hoặc không ở trạng thái Mở.', 1;
         END
 
         -- 2. Kiểm tra có ít nhất 1 chi tiết
@@ -161,7 +148,7 @@ BEGIN
             SELECT 1 FROM ChiTietHoaDon WHERE MaHD = @MaHD
         )
         BEGIN
-            THROW 50011, N'Hóa đơn chưa có món nào, không thể thanh toán.', 1;
+            ;THROW 50011, N'Hóa đơn chưa có món nào, không thể thanh toán.', 1;
         END
 
         -- 3. Lấy TongTien thực tế (OUTPUT)
@@ -169,22 +156,15 @@ BEGIN
         FROM   HoaDon
         WHERE  MaHD = @MaHD;
 
-        -- 4. Cập nhật TrangThai HĐ → 'Đã thanh toán'
-        --    Trigger TR02 (trg_HoaDon_CapNhatBan) sẽ tự động cập nhật
-        --    Ban.TrangThai → 'Trống' khi TrangThai HĐ đổi sang 'Đã thanh toán'.
-        --    Nếu trigger chưa tạo hoặc bị disable, cập nhật Ban thủ công.
+        -- 4. Cập nhật TrangThai HĐ
         UPDATE HoaDon
         SET    TrangThai = N'Đã thanh toán'
         WHERE  MaHD = @MaHD;
 
-        -- 5. Đảm bảo bàn về 'Trống' nếu trigger TR02 chưa hoạt động
-        IF OBJECT_ID(N'dbo.trg_HoaDon_CapNhatBan', N'TR') IS NULL
-           OR OBJECTPROPERTY(OBJECT_ID(N'dbo.trg_HoaDon_CapNhatBan'), 'ExecIsTriggerDisabled') = 1
-        BEGIN
-            UPDATE Ban
-            SET    TrangThai = N'Trống'
-            WHERE  MaBan = (SELECT MaBan FROM HoaDon WHERE MaHD = @MaHD);
-        END
+        -- 5. Cập nhật TrangThai bàn → 'Trống'
+        UPDATE Ban
+        SET    TrangThai = N'Trống'
+        WHERE  MaBan = (SELECT MaBan FROM HoaDon WHERE MaHD = @MaHD);
 
         COMMIT TRANSACTION;
         PRINT N'[sp_ThanhToan] Thanh toán thành công. MaHD=' + CAST(@MaHD AS NVARCHAR)
@@ -192,7 +172,7 @@ BEGIN
     END TRY
     BEGIN CATCH
         IF @@TRANCOUNT > 0 ROLLBACK TRANSACTION;
-        THROW;
+        ;THROW;
     END CATCH
 END
 GO
@@ -233,7 +213,7 @@ BEGIN
         -- 1. Kiểm tra bàn tồn tại
         IF NOT EXISTS (SELECT 1 FROM Ban WHERE MaBan = @MaBan)
         BEGIN
-            THROW 50020, N'Bàn không tồn tại.', 1;
+            ;THROW 50020, N'Bàn không tồn tại.', 1;
         END
 
         -- 2. Kiểm tra nhân viên tồn tại và là Phục vụ
@@ -242,7 +222,7 @@ BEGIN
             WHERE MaNV = @MaNV AND ChucVu = N'PhucVu'
         )
         BEGIN
-            THROW 50021, N'Nhân viên không tồn tại hoặc không có chức vụ Phục vụ.', 1;
+            ;THROW 50021, N'Nhân viên không tồn tại hoặc không có chức vụ Phục vụ.', 1;
         END
 
         -- 3. Kiểm tra bàn 'Trống'
@@ -251,7 +231,7 @@ BEGIN
 
         IF @TrangThaiBan <> N'Trống'
         BEGIN
-            THROW 50022, N'Bàn hiện không ở trạng thái Trống, không thể mở hóa đơn mới.', 1;
+            ;THROW 50022, N'Bàn hiện không ở trạng thái Trống, không thể mở hóa đơn mới.', 1;
         END
 
         -- 4. INSERT HoaDon mới
@@ -271,7 +251,7 @@ BEGIN
     END TRY
     BEGIN CATCH
         IF @@TRANCOUNT > 0 ROLLBACK TRANSACTION;
-        THROW;
+        ;THROW;
     END CATCH
 END
 GO
@@ -315,7 +295,7 @@ BEGIN
             SELECT 1 FROM HoaDon WHERE MaHD = @MaHD AND TrangThai = N'Mở'
         )
         BEGIN
-            THROW 50030, N'Hóa đơn không tồn tại hoặc không ở trạng thái Mở, không thể hủy.', 1;
+            ;THROW 50030, N'Hóa đơn không tồn tại hoặc không ở trạng thái Mở, không thể hủy.', 1;
         END
 
         -- 2. Dùng CURSOR duyệt từng ChiTietHoaDon → cộng lại nguyên liệu
@@ -349,33 +329,30 @@ BEGIN
         DEALLOCATE cur_ChiTiet;
 
         -- 3. Cập nhật TrangThai HĐ → 'Hủy'
-        --    Trigger TR02 (trg_HoaDon_CapNhatBan) sẽ tự động cập nhật
-        --    Ban.TrangThai → 'Trống' khi TrangThai HĐ đổi sang 'Hủy'.
         UPDATE HoaDon
         SET    TrangThai = N'Hủy'
         WHERE  MaHD = @MaHD;
 
-        -- 4. Đảm bảo bàn về 'Trống' nếu trigger TR02 chưa hoạt động
-        IF OBJECT_ID(N'dbo.trg_HoaDon_CapNhatBan', N'TR') IS NULL
-           OR OBJECTPROPERTY(OBJECT_ID(N'dbo.trg_HoaDon_CapNhatBan'), 'ExecIsTriggerDisabled') = 1
-        BEGIN
-            UPDATE Ban
-            SET    TrangThai = N'Trống'
-            WHERE  MaBan = (SELECT MaBan FROM HoaDon WHERE MaHD = @MaHD);
-        END
+        -- 4. Cập nhật TrangThai bàn → 'Trống'
+        UPDATE Ban
+        SET    TrangThai = N'Trống'
+        WHERE  MaBan = (SELECT MaBan FROM HoaDon WHERE MaHD = @MaHD);
 
         COMMIT TRANSACTION;
         PRINT N'[sp_HuyHoaDon] Hủy hóa đơn thành công. MaHD=' + CAST(@MaHD AS NVARCHAR);
     END TRY
     BEGIN CATCH
-        IF @@TRANCOUNT > 0 ROLLBACK TRANSACTION;
+        IF @@TRANCOUNT > 0 
+            ROLLBACK TRANSACTION;
+
         -- Đóng CURSOR nếu còn mở (tránh resource leak)
         IF CURSOR_STATUS('local', 'cur_ChiTiet') >= 0
         BEGIN
             CLOSE cur_ChiTiet;
             DEALLOCATE cur_ChiTiet;
-        END
-        THROW;
+        END;
+
+        ;THROW;
     END CATCH
 END
 GO
@@ -410,12 +387,12 @@ BEGIN
     -- Kiểm tra khoảng tháng hợp lệ
     IF @ThangBatDau > @ThangKetThuc
     BEGIN
-        THROW 50040, N'ThangBatDau phải nhỏ hơn hoặc bằng ThangKetThuc.', 1;
+        ;THROW 50040, N'ThangBatDau phải nhỏ hơn hoặc bằng ThangKetThuc.', 1;
     END
 
     IF @ThangBatDau < 1 OR @ThangKetThuc > 12
     BEGIN
-        THROW 50041, N'Tháng phải nằm trong khoảng 1 đến 12.', 1;
+        ;THROW 50041, N'Tháng phải nằm trong khoảng 1 đến 12.', 1;
     END
 
     -- Thống kê doanh thu từng tháng
@@ -426,6 +403,8 @@ BEGIN
         SUM(ct.SoLuong * ct.DonGia)  AS DoanhThu
     FROM   HoaDon         hd
     JOIN   ChiTietHoaDon  ct ON ct.MaHD  = hd.MaHD
+    JOIN   Mon             m  ON m.MaMon  = ct.MaMon
+    JOIN   NhanVien        nv ON nv.MaNV  = hd.MaNV
     WHERE  hd.TrangThai = N'Đã thanh toán'
       AND  YEAR(hd.NgayLap)  = @Nam
       AND  MONTH(hd.NgayLap) BETWEEN @ThangBatDau AND @ThangKetThuc
@@ -542,7 +521,7 @@ RETURNS @KetQua TABLE
 (
     MaMon   INT,
     TenMon  NVARCHAR(100),
-    GiaBan  DECIMAL(12,0),
+    GiaBan  DECIMAL(14,0),
     TenLoai NVARCHAR(100),
     Nhom    CHAR(1),
     DangBan BIT

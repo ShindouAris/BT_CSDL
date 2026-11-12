@@ -6,90 +6,80 @@ GO
    CSDL: QL_CAFE_NHAHANG
    ===================================================================== */
 
-USE QL_CAFE_NHAHANG;
-GO
-
 -- ============================================================
 -- PHẦN 1: TẠO LOGIN / USER / ROLE
 -- ============================================================
 
--- ----------------------------------------------------------------
--- 1.1  ROLE_PHUCVU — Nhân viên phục vụ (gọi món)
--- ----------------------------------------------------------------
-IF NOT EXISTS (SELECT 1 FROM sys.server_principals WHERE name = 'login_phucvu')
-    CREATE LOGIN login_phucvu WITH PASSWORD = N'PhucVu@2025!',
-        DEFAULT_DATABASE = QL_CAFE_NHAHANG,
-        CHECK_EXPIRATION = OFF, CHECK_POLICY = ON;
+-- ------------------------------------------------------------
+-- 1.0  DỌN DẸP NẾU ĐÃ TỒN TẠI (Đảm bảo chạy lại script không bị lỗi trùng lặp)
+-- ------------------------------------------------------------
+USE QL_CAFE_NHAHANG;
 GO
 
-IF NOT EXISTS (SELECT 1 FROM sys.database_principals WHERE name = 'user_phucvu')
-    CREATE USER user_phucvu FOR LOGIN login_phucvu;
+-- Xóa User cũ trong database nếu có
+IF EXISTS (SELECT 1 FROM sys.database_principals WHERE name = 'user_phucvu') DROP USER user_phucvu;
+IF EXISTS (SELECT 1 FROM sys.database_principals WHERE name = 'user_thungan') DROP USER user_thungan;
+IF EXISTS (SELECT 1 FROM sys.database_principals WHERE name = 'user_bep') DROP USER user_bep;
+IF EXISTS (SELECT 1 FROM sys.database_principals WHERE name = 'user_quanly') DROP USER user_quanly;
 GO
 
-IF NOT EXISTS (SELECT 1 FROM sys.database_principals WHERE name = 'role_PhucVu' AND type = 'R')
-    CREATE ROLE role_PhucVu;
+-- Xóa Role cũ trong database nếu có
+IF EXISTS (SELECT 1 FROM sys.database_principals WHERE name = 'role_PhucVu' AND type = 'R') DROP ROLE role_PhucVu;
+IF EXISTS (SELECT 1 FROM sys.database_principals WHERE name = 'role_ThuNgan' AND type = 'R') DROP ROLE role_ThuNgan;
+IF EXISTS (SELECT 1 FROM sys.database_principals WHERE name = 'role_Bep' AND type = 'R') DROP ROLE role_Bep;
+IF EXISTS (SELECT 1 FROM sys.database_principals WHERE name = 'role_QuanLy' AND type = 'R') DROP ROLE role_QuanLy;
 GO
 
+USE master;
+GO
+
+-- Xóa Login cũ ở server nếu có
+IF EXISTS (SELECT 1 FROM sys.server_principals WHERE name = 'login_phucvu') DROP LOGIN login_phucvu;
+IF EXISTS (SELECT 1 FROM sys.server_principals WHERE name = 'login_thungan') DROP LOGIN login_thungan;
+IF EXISTS (SELECT 1 FROM sys.server_principals WHERE name = 'login_bep') DROP LOGIN login_bep;
+IF EXISTS (SELECT 1 FROM sys.server_principals WHERE name = 'login_quanly') DROP LOGIN login_quanly;
+GO
+
+-- ------------------------------------------------------------
+-- 1.1  TẠO MỚI LOGIN (ở cấp Instance / master)
+-- ------------------------------------------------------------
+CREATE LOGIN login_phucvu WITH PASSWORD = N'PhucVu@2025!',
+    DEFAULT_DATABASE = QL_CAFE_NHAHANG, CHECK_EXPIRATION = OFF, CHECK_POLICY = ON;
+
+CREATE LOGIN login_thungan WITH PASSWORD = N'ThuNgan@2025!',
+    DEFAULT_DATABASE = QL_CAFE_NHAHANG, CHECK_EXPIRATION = OFF, CHECK_POLICY = ON;
+
+CREATE LOGIN login_bep WITH PASSWORD = N'BepNuong@2025!',
+    DEFAULT_DATABASE = QL_CAFE_NHAHANG, CHECK_EXPIRATION = OFF, CHECK_POLICY = ON;
+
+CREATE LOGIN login_quanly WITH PASSWORD = N'QuanLy@2025!',
+    DEFAULT_DATABASE = QL_CAFE_NHAHANG, CHECK_EXPIRATION = OFF, CHECK_POLICY = ON;
+GO
+
+-- ------------------------------------------------------------
+-- 1.2  TẠO MỚI USER, ROLE & GÁN THÀNH VIÊN (trong CSDL QL_CAFE_NHAHANG)
+-- ------------------------------------------------------------
+USE QL_CAFE_NHAHANG;
+GO
+
+-- Tạo User từ Login
+CREATE USER user_phucvu FOR LOGIN login_phucvu;
+CREATE USER user_thungan FOR LOGIN login_thungan;
+CREATE USER user_bep FOR LOGIN login_bep;
+CREATE USER user_quanly FOR LOGIN login_quanly;
+GO
+
+-- Tạo Database Roles
+CREATE ROLE role_PhucVu;
+CREATE ROLE role_ThuNgan;
+CREATE ROLE role_Bep;
+CREATE ROLE role_QuanLy;
+GO
+
+-- Gán User vào Role tương ứng
 ALTER ROLE role_PhucVu ADD MEMBER user_phucvu;
-GO
-
--- ----------------------------------------------------------------
--- 1.2  ROLE_THUNGAN — Thu ngân (thanh toán)
--- ----------------------------------------------------------------
-IF NOT EXISTS (SELECT 1 FROM sys.server_principals WHERE name = 'login_thungan')
-    CREATE LOGIN login_thungan WITH PASSWORD = N'ThuNgan@2025!',
-        DEFAULT_DATABASE = QL_CAFE_NHAHANG,
-        CHECK_EXPIRATION = OFF, CHECK_POLICY = ON;
-GO
-
-IF NOT EXISTS (SELECT 1 FROM sys.database_principals WHERE name = 'user_thungan')
-    CREATE USER user_thungan FOR LOGIN login_thungan;
-GO
-
-IF NOT EXISTS (SELECT 1 FROM sys.database_principals WHERE name = 'role_ThuNgan' AND type = 'R')
-    CREATE ROLE role_ThuNgan;
-GO
-
 ALTER ROLE role_ThuNgan ADD MEMBER user_thungan;
-GO
-
--- ----------------------------------------------------------------
--- 1.3  ROLE_BEP — Bếp (xem món cần chế biến)
--- ----------------------------------------------------------------
-IF NOT EXISTS (SELECT 1 FROM sys.server_principals WHERE name = 'login_bep')
-    CREATE LOGIN login_bep WITH PASSWORD = N'BepNuong@2025!',
-        DEFAULT_DATABASE = QL_CAFE_NHAHANG,
-        CHECK_EXPIRATION = OFF, CHECK_POLICY = ON;
-GO
-
-IF NOT EXISTS (SELECT 1 FROM sys.database_principals WHERE name = 'user_bep')
-    CREATE USER user_bep FOR LOGIN login_bep;
-GO
-
-IF NOT EXISTS (SELECT 1 FROM sys.database_principals WHERE name = 'role_Bep' AND type = 'R')
-    CREATE ROLE role_Bep;
-GO
-
 ALTER ROLE role_Bep ADD MEMBER user_bep;
-GO
-
--- ----------------------------------------------------------------
--- 1.4  ROLE_QUANLY — Quản lý (xem tất cả)
--- ----------------------------------------------------------------
-IF NOT EXISTS (SELECT 1 FROM sys.server_principals WHERE name = 'login_quanly')
-    CREATE LOGIN login_quanly WITH PASSWORD = N'QuanLy@2025!',
-        DEFAULT_DATABASE = QL_CAFE_NHAHANG,
-        CHECK_EXPIRATION = OFF, CHECK_POLICY = ON;
-GO
-
-IF NOT EXISTS (SELECT 1 FROM sys.database_principals WHERE name = 'user_quanly')
-    CREATE USER user_quanly FOR LOGIN login_quanly;
-GO
-
-IF NOT EXISTS (SELECT 1 FROM sys.database_principals WHERE name = 'role_QuanLy' AND type = 'R')
-    CREATE ROLE role_QuanLy;
-GO
-
 ALTER ROLE role_QuanLy ADD MEMBER user_quanly;
 GO
 
@@ -363,6 +353,10 @@ GO
 USE master;
 GO
 
+-- Đảm bảo CSDL ở Recovery Model FULL ngay từ đầu chuỗi sao lưu
+ALTER DATABASE QL_CAFE_NHAHANG SET RECOVERY FULL;
+GO
+
 -- Đảm bảo thư mục đích tồn tại trước khi chạy backup
 -- (Chạy lệnh sau trong PowerShell nếu cần: New-Item -ItemType Directory -Path "C:\SQLBackup")
 
@@ -376,7 +370,7 @@ WITH
     INIT,                                       -- khởi tạo lại file backup
     NAME = N'QL_CAFE_NHAHANG — Full Backup',
     DESCRIPTION = N'Sao luu toan bo CSDL quan ly cafe nha hang',
-    COMPRESSION,                                -- nén để tiết kiệm dung lượng
+    -- COMPRESSION,                             -- Tắt nén để tương thích cả bản Express Edition (bản Standard/Enterprise có thể bật)
     CHECKSUM,                                   -- kiểm tra tính toàn vẹn
     STATS = 10;                                 -- hiển thị tiến độ mỗi 10%
 GO
@@ -387,10 +381,12 @@ GO
 BACKUP DATABASE QL_CAFE_NHAHANG
 TO DISK = N'C:\SQLBackup\QL_CAFE_NHAHANG_Diff.bak'
 WITH
+    FORMAT,
+    INIT,
     DIFFERENTIAL,
     NAME = N'QL_CAFE_NHAHANG — Differential Backup',
     DESCRIPTION = N'Sao luu vi sai tu Full backup cuoi cung',
-    COMPRESSION,
+    -- COMPRESSION,
     CHECKSUM,
     STATS = 10;
 GO
@@ -398,20 +394,14 @@ GO
 -- ----------------------------------------------------------------
 -- 4.3  Sao lưu LOG — transaction log (cần Recovery Model = FULL)
 -- ----------------------------------------------------------------
--- Bước 1: Chuyển sang Recovery Model FULL (nếu chưa)
-ALTER DATABASE QL_CAFE_NHAHANG SET RECOVERY FULL;
-GO
-
--- Bước 2: Lấy full backup mới (bắt buộc sau khi đổi Recovery Model)
--- (Bỏ qua nếu vừa thực hiện bước 4.1)
-
--- Bước 3: Backup Transaction Log
 BACKUP LOG QL_CAFE_NHAHANG
 TO DISK = N'C:\SQLBackup\QL_CAFE_NHAHANG_Log.bak'
 WITH
+    FORMAT,
+    INIT,
     NAME = N'QL_CAFE_NHAHANG — Log Backup',
     DESCRIPTION = N'Sao luu nhat ky giao dich',
-    COMPRESSION,
+    -- COMPRESSION,
     CHECKSUM,
     STATS = 10;
 GO
@@ -420,6 +410,9 @@ GO
 -- ============================================================
 -- PHẦN 5: PHỤC HỒI (RESTORE)
 -- ============================================================
+
+USE master;
+GO
 
 -- ----------------------------------------------------------------
 -- 5.1  Xác minh backup trước khi phục hồi
@@ -443,6 +436,14 @@ GO
 -- ----------------------------------------------------------------
 -- 5.2  Phục hồi FULL vào CSDL mới (QL_CAFE_RESTORE) — NORECOVERY
 -- ----------------------------------------------------------------
+-- Đảm bảo đóng kết nối và xóa CSDL restore cũ (nếu có) để tránh xung đột
+IF DB_ID(N'QL_CAFE_RESTORE') IS NOT NULL
+BEGIN
+    ALTER DATABASE QL_CAFE_RESTORE SET SINGLE_USER WITH ROLLBACK IMMEDIATE;
+    DROP DATABASE QL_CAFE_RESTORE;
+END
+GO
+
 -- Lưu ý: điều chỉnh đường dẫn .mdf/.ldf theo cấu hình SQL Server thực tế
 RESTORE DATABASE QL_CAFE_RESTORE
 FROM DISK = N'C:\SQLBackup\QL_CAFE_NHAHANG_Full.bak'
