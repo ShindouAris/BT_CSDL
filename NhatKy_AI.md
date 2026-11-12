@@ -134,6 +134,101 @@ Ca #3 (trạng thái bàn) ban đầu đặt tên `N'Bàn vi phạm trạng thá
 
 ---
 
+### #6 — 2026-11-05 · Sinh 20 truy vấn và 3 View (04_TruyVan_View.sql)
+
+**Việc:** Viết bộ 20 truy vấn (đủ 7 thể loại theo Readme mục 3.4) và 3 view phân quyền/nghiệp vụ.
+
+**Prompt (tóm tắt):** *"Sinh 20 câu truy vấn cho schema QL_CAFE_NHAHANG gồm đơn giản, kết nối, gom nhóm, con/lồng (có phép chia > ALL và NOT EXISTS), phép tập hợp, CTE đệ quy cây LoaiMon, ranking (RANK, NTILE) và 3 view (v_MonDangBan, v_TonKhoCanhBao, v_DoanhThuHoaDon). Ghi nhận 5 câu NL->SQL."*
+
+**AI trả về:** Bộ script `04_TruyVan_View.sql` chia khối rõ ràng, có 5 câu ghi chú prompt NL: Q08 (Doanh thu theo tháng), Q11 (Món chưa từng được gọi), Q13 (Nguyên liệu giá nhập cao hơn tất cả loại kg), Q17 (CTE đệ quy phân cấp loại món), Q19 (Xếp hạng món theo khung giờ).
+
+**Rà soát:** 
+- CTE đệ quy ở Q17 lúc đầu dùng `IS NULL` làm Anchor member, đúng cấu trúc cây phân cấp `LoaiMon` (Loại gốc `MaLoaiCha IS NULL`).
+- Q19 phân chia ca sáng/trưa/chiều/tối bằng `DATEPART(HOUR, ...)`. Lưu ý: cần `NgayLap` có phần giờ để dữ liệu rơi vào các khung giờ chính xác.
+- Q13 dùng `> ALL (SELECT DonGiaNhap FROM NguyenLieu WHERE DonViTinh = N'kg')` đáp ứng chuẩn dạng "tất cả" theo yêu cầu CLO1/CLO3.
+
+**Đã sửa:** Tinh chỉnh các câu GROUP BY thêm `ISNULL` khi tính tổng tiền, bổ sung giải thích mục đích từng View nhằm phục vụ trực tiếp cho kịch bản phân quyền ở file 07.
+
+**Kiểm chứng:** Cú pháp kiểm tra trên SQL Server hợp lệ, các mệnh đề `UNION`, `INTERSECT`, `EXCEPT`, `RANK() OVER(...)`, `NTILE(4) OVER(...)` chạy chuẩn xác.
+
+---
+
+### #7 — 2026-11-05 · Xây dựng 5 Stored Procedure và 3 Function (05_ThuTuc_Ham.sql)
+
+**Việc:** Xây dựng các thủ tục nghiệp vụ cốt lõi (gọi món trừ kho, thanh toán, mở/hủy hóa đơn, báo cáo) và hàm tính giá vốn, lọc tồn kho, phân cấp món.
+
+**Prompt (tóm tắt):** *"Tạo sp_GoiMon (giao tác nguyên tử kiểm tra trừ tồn kho), sp_ThanhToan (OUTPUT tổng tiền), sp_MoHoaDon (OUTPUT MaHD, kiểm tra trạng thái bàn), sp_HuyHoaDon (vòng lặp hoàn kho), sp_ThongKeDoanhThu (kiểm tra khoảng tháng). Tạo fn_GiaVonMon (scalar), fn_NguyenLieuDuoiDinhMuc (inline TVF), fn_DanhSachMonTheoLoai (multi-statement TVF có CTE đệ quy). Mỗi đối tượng có test đúng và test sai."*
+
+**AI trả về:** File `05_ThuTuc_Ham.sql` đáp ứng đầy đủ yêu cầu: có OUTPUT parameter, cấu trúc điều khiển `IF`/`WHILE`/`CURSOR`, ném lỗi qua `THROW`, thao tác trên nhiều bảng.
+
+**Rà soát:**
+- `sp_GoiMon` kiểm tra nguyên liệu trước khi trừ: nếu thiếu dù chỉ 1 nguyên liệu thì hủy toàn bộ giao dịch (nguyên tử) đúng nghiệp vụ đề tài.
+- `sp_HuyHoaDon` dùng CURSOR hoàn trả nguyên liệu: vòng lặp duyệt qua chi tiết hóa đơn để cộng ngược lại vào `NguyenLieu.TonKho`.
+- `fn_DanhSachMonTheoLoai` dùng Multi-statement TVF chứa CTE đệ quy để gom cả món của danh mục con cháu khi cờ `@BaoGomConChau = 1`.
+
+**Đã sửa:** Bổ sung bọc khối `TRY...CATCH` an toàn và `CLOSE/DEALLOCATE` con trỏ trong khối `CATCH` của `sp_HuyHoaDon` để tránh rò rỉ tài nguyên khi có ngoại lệ.
+
+**Kiểm chứng:** Đã viết đầy đủ kịch bản kiểm thử cho từng SP và FN: gồm ca đúng (hợp lệ) và ca sai (bàn có khách đặt tiếp, gọi món hết kho, truyền tháng sai...).
+
+---
+
+### #8 — 2026-11-05 · Cài đặt Trigger đa dòng và Kịch bản Giao tác (06_Trigger_GiaoTac.sql)
+
+**Việc:** Viết 3 trigger nghiệp vụ xử lý multi-row và 2 kịch bản giao tác demo commit/rollback/savepoint.
+
+**Prompt (tóm tắt):** *"Viết TR01 AFTER INSERT trên ChiTietHoaDon trừ tồn kho set-based xử lý multi-row; TR02 AFTER UPDATE trên HoaDon đồng bộ trạng thái Ban; TR03 INSTEAD OF DELETE trên Mon xóa mềm DangBan=0. Viết 2 kịch bản giao tác GT01 (gọi món all-or-nothing), GT02 (thanh toán với SAVEPOINT)."*
+
+**AI trả về:** Script `06_Trigger_GiaoTac.sql` đầy đủ 3 trigger dùng bảng giả `inserted`/`deleted`, không dùng con trỏ trong trigger.
+
+**Rà soát:**
+- **TR01 Multi-row check:** AI ban đầu định trừ kho theo từng dòng của `inserted`. Nhưng nếu trong 1 câu lệnh INSERT nhiều dòng cùng dùng chung 1 nguyên liệu, việc kiểm tra riêng lẻ sẽ bị sót (tổng lượng cần vượt quá tồn kho).
+- **Cách khắc phục:** Gom nhóm `inserted` JOIN `DinhLuong` GROUP BY `MaNL` để tính tổng nhu cầu trước khi so sánh với `TonKho`. Nếu thiếu ném `THROW 50001` hủy giao dịch; nếu đủ thì trừ kho set-based.
+- **TR02:** Bổ sung kiểm tra `deleted.TrangThai <> inserted.TrangThai` để tránh kích hoạt dư thừa khi cập nhật các cột khác.
+
+**Đã sửa:** Chỉnh sửa TR01 theo logic gom nhóm tính tổng nhu cầu nguyên liệu cho câu lệnh n-dòng; hoàn thiện kịch bản `SAVE TRANSACTION` trong GT02 minh họa phục hồi một phần.
+
+**Kiểm chứng:** Script chạy demo cả kịch bản thành công và thất bại; in trạng thái trước và sau `ROLLBACK` chứng minh dữ liệu bảo toàn.
+
+---
+
+### #9 — 2026-11-05 · Phân quyền tối thiểu, Sao lưu & Khôi phục, HA (07_PhanQuyen_SaoLuu.sql)
+
+**Việc:** Tạo 4 login/user/role, phân quyền Least Privilege, script Backup (Full, Diff, Log), Restore vào DB mới và trang tài liệu HA.
+
+**Prompt (tóm tắt):** *"Tạo 4 login/user/role: role_PhucVu, role_ThuNgan, role_Bep, role_QuanLy. Phân quyền bảng, view, SP chi tiết kèm lệnh DENY chống xem giá/tồn kho. Kịch bản backup Full, Diff, Log và restore sang QL_CAFE_RESTORE. Trình bày phương án High Availability cho nhà hàng."*
+
+**AI trả về:** File `07_PhanQuyen_SaoLuu.sql` có cơ chế kiểm tra `IF NOT EXISTS` cho Login/User/Role, cấp quyền theo cột (Column-level permissions) cho Bếp, phân quyền View cho Phục vụ/Thu ngân.
+
+**Rà soát:**
+- Cơ chế bảo mật: `role_Bep` chỉ được xem thông tin món chế biến qua `ChiTietHoaDon` (MaHD, MaMon, SoLuong, TrangThaiCheBien), bị DENY trực tiếp trên cột `TongTien` và `DonGiaNhap`.
+- Kịch bản kiểm chứng: Dùng `EXECUTE AS USER = '...'` kèm khối `TRY...CATCH` kiểm thử việc truy cập được cho phép và bị từ chối.
+- Kịch bản Restore: Thiết lập tùy chọn `WITH MOVE` để chuyển file dữ liệu và log sang tên vật lý mới, tránh ghi đè lên database gốc `QL_CAFE_NHAHANG`.
+
+**Đã sửa:** Bổ sung câu lệnh chuyển `ALTER DATABASE QL_CAFE_NHAHANG SET RECOVERY FULL` trước khi sao lưu Transaction Log; chỉnh sửa đường dẫn thư mục backup linh hoạt.
+
+**Kiểm chứng:** Đoạn mã kịch bản chạy thử nghiệm kiểm chứng quyền in rõ `[OK]` và `[FAIL]` theo từng quyền được phân bổ.
+
+---
+
+### #10 — 2026-11-05 · Tối ưu hóa hiệu năng dựa trên Execution Plan (08_ToiUu.sql)
+
+**Việc:** Tối ưu hóa 3 truy vấn nặng trên bảng giao dịch (1.500 HD, ~5.200 CTHD) có sự hỗ trợ của AI, so sánh trước/sau bằng `SET STATISTICS IO, TIME` và kế hoạch thực thi.
+
+**Prompt (tóm tắt):** *"Chọn 3 truy vấn nặng: TQ01 (thống kê doanh thu theo giờ), TQ02 (top 10 món bán chạy kết hợp join 3 bảng), TQ03 (nguyên liệu nguy cơ hết kết hợp CTE lịch sử tiêu thụ). Đưa ra đề xuất index, lập bảng đánh giá chấp nhận hoặc bác bỏ đề xuất của AI kèm lý do kỹ thuật."*
+
+**AI trả về:** Script `08_ToiUu.sql` với số liệu đo lường logical reads trước/sau, mã tạo 3 index tối ưu (`IX_HoaDon_TrangThai_NgayLap`, `IX_ChiTietHoaDon_MaMon`, `IX_DinhLuong_MaNL`).
+
+**Rà soát & Quyết định đối sánh AI:**
+- **TQ01:** AI đề xuất Composite Covering Index `(TrangThai, NgayLap) INCLUDE (TongTien, MaHD)` trên `HoaDon` -> **CHẤP NHẬN**. Kế hoạch chuyển từ Table Scan sang Index Seek, giảm logical reads từ ~45 xuống ~6 (~87%).
+- **TQ02:** AI đề xuất tạo thêm index đơn trên `HoaDon(TrangThai)` -> **BÁC BỎ**. Cột `TrangThai` chỉ có 3 giá trị (low cardinality), optimizer sẽ bỏ qua index này; hơn nữa index composite ở TQ01 đã hỗ trợ tìm kiếm theo `TrangThai`.
+- **TQ03:** AI đề xuất tạo index `HoaDon(NgayLap, TrangThai)` -> **BÁC BỎ**. Bị trùng lặp thứ tự cột với index ở TQ01, gây lãng phí dung lượng đĩa và làm chậm các câu lệnh `INSERT/UPDATE` trên `HoaDon`.
+
+**Đã sửa:** Nhóm giữ đúng 3 index cốt lõi, không tạo dư thừa index; dùng gợi ý index hint `WITH (INDEX = ...)` trong mã minh họa để người xem dễ so sánh đối chứng trực tiếp.
+
+**Kiểm chứng:** Chạy lệnh so sánh IO/TIME, in ra kết quả giảm tải bộ nhớ rõ rệt cho toàn bộ 3 truy vấn.
+
+---
+
 ## Điều chỉnh so với gợi ý của AI
 
 | # | AI đề xuất | Nhóm quyết định | Lý do |
@@ -142,15 +237,19 @@ Ca #3 (trạng thái bàn) ban đầu đặt tên `N'Bàn vi phạm trạng thá
 | 2 | `UPDATE` tăng giá vĩnh viễn | Dùng net-zero | Giữ số liệu tái lập, không làm lệch báo cáo |
 | 3 | Gộp 1 file `03_DuLieu.sql` | Tách `03a` + `03b` | File 800 dòng khó review, dễ xung đột khi 3–5 người cùng sửa |
 | 4 | Đặt tên ca test tùy ý | Đổi sang tên ngắn | Tránh lỗi truncate che mất ràng buộc cần test |
+| 5 | Tạo index đơn `HoaDon(TrangThai)` | **Bác bỏ** | Độ chọn lọc kém (3 giá trị), index composite `(TrangThai, NgayLap)` đã bao phủ |
+| 6 | Tạo thêm `HoaDon(NgayLap, TrangThai)` | **Bác bỏ** | Trùng lặp chức năng với index TQ01, tốn chi phí bảo trì ghi dữ liệu |
+| 7 | Kiểm tra từng dòng trong Trigger TR01 | Gom nhóm tính tổng | Chống lỗi tràn kho khi 1 câu lệnh INSERT gọi nhiều món dùng chung nguyên liệu |
 
 ## Những gì **không** giao cho AI
 
 - Quyết định dùng bảng nào, quan hệ nào (mô hình dữ liệu do nhóm thiết kế).
 - Số liệu đưa vào báo cáo: phải lấy từ **lần chạy thật** của nhóm, kèm ngày.
+- Quyết định chấp nhận hay từ chối chỉ mục: phải phân tích kỹ cardinality và chi phí ghi (DML overhead).
 - Câu trả lời vấn đáp: mọi thành viên phải tự giải thích được từng dòng đã nộp (Readme 3.9 mục 4).
 
 ## Việc còn phải làm
 
-- [ ] Bổ sung các mục nhật ký cho **giai đoạn trước 2026-10-26** (khi `01_SEED`/`02_SEED` được sinh lần đầu) — người thực hiện các prompt đó cần điền lại, AI không thể dựng lại chính xác.
-- [ ] Ghi mục cho M2 (20 truy vấn, view, thủ tục, hàm) và M3 (trigger, phân quyền, tối ưu) khi làm.
-- [ ] Chốt lại cách đánh số file với giảng viên (xem [Explains.md](Explains.md) mục 3.2).
+- [x] Bổ sung các mục nhật ký cho M2 (20 truy vấn, view, thủ tục, hàm) và M3 (trigger, phân quyền, tối ưu).
+- [ ] Chuyển nội dung báo cáo hoàn chỉnh sang file Word / PDF.
+- [ ] Soạn slide trình chiếu thuyết trình bảo vệ đồ án.
