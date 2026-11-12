@@ -45,7 +45,7 @@ Phạm vi:
 | **Suy luận** | Là kết luận hợp lý từ code, nhưng file không ghi rõ ý đồ của tác giả |
 | **Chưa kiểm chứng** | Chưa chạy thử, chưa quan sát được kết quả thực tế |
 
-> ⚠️ **Trạng thái kiểm chứng (cập nhật 26/10/2026):** `02_Bang.sql`, `03a_DanhMuc.sql`, `03b_GiaoDich.sql`, `04_TEST_VI_PHAM.sql` **đã được chạy thật** trên SQL Server 2025 (17.0.1000.7) trong một CSDL tạm `QL_CAFE_TEST` — cả 4 chạy không lỗi, các con số ở mục 6.10 và 7 là **kết quả đo**, không còn là suy luận. Riêng `01_CAUHINH_CSDL.sql` **chưa chạy** vì nó `DROP DATABASE` CSDL thật đang dùng. CSDL `QL_CAFE_NHAHANG` trên máy vẫn giữ nguyên dữ liệu cũ (1.500 hóa đơn / 5.000 chi tiết — bản `03b` trước khi sửa).
+> ⚠️ **Trạng thái kiểm chứng (cập nhật 26/10/2026):** `02_Bang.sql`, `03_DuLieu.sql`, `others_TEST_VI_PHAM.sql` **đã được chạy thật** trên SQL Server 2025 (17.0.1000.7) trong một CSDL tạm `QL_CAFE_TEST` — cả 4 chạy không lỗi, các con số ở mục 6.10 và 7 là **kết quả đo**, không còn là suy luận. Riêng `01_CAUHINH_CSDL.sql` **chưa chạy** vì nó `DROP DATABASE` CSDL thật đang dùng. CSDL `QL_CAFE_NHAHANG` trên máy vẫn giữ nguyên dữ liệu cũ (1.500 hóa đơn / 5.000 chi tiết — bản `03b` trước khi sửa).
 
 ### 2.2. Cách đọc một script SQL dài
 
@@ -80,7 +80,7 @@ Thư mục `sql/` **không có thư mục con** và **không có file nào khác
 | Thư mục | Chứa gì | Vai trò |
 |---|---|---|
 | `sql/` | `01_CAUHINH_CSDL.sql`, `02_Bang.sql` | **Cấu trúc** — tạo CSDL rỗng và các bảng |
-| `scripts/` | `03a_DanhMuc.sql`, `03b_GiaoDich.sql`, `04_TEST_VI_PHAM.sql` (+ `03_RESET_DB.sql` tiện ích) | **Nội dung** — đổ dữ liệu mẫu, minh họa DML, kiểm chứng ràng buộc |
+| `sql/` (nhóm others_) | `03_DuLieu.sql`, `others_TEST_VI_PHAM.sql` (+ `others_RESET_DB.sql` tiện ích) | **Nội dung** — đổ dữ liệu mẫu, minh họa DML, kiểm chứng ràng buộc |
 
 Các file trên thuộc **cùng một chuỗi chạy liên tục**; dữ liệu không chạy được nếu chưa có bảng.
 
@@ -112,17 +112,17 @@ Các file trên thuộc **cùng một chuỗi chạy liên tục**; dữ liệu 
 └───────────────┬────────────────┘
                 ▼
 ┌────────────────────────────────┐
-│ 3. scripts/03a_DanhMuc.sql     │  Nạp danh mục: 11 loại, 15 bàn, 12 NV,
+│ 3. sql/03_DuLieu.sql     │  Nạp danh mục: 11 loại, 15 bàn, 12 NV,
 │                                │  28 NL, 36 món, 18+18 chuyên biệt, 130 định lượng
 └───────────────┬────────────────┘
                 ▼
 ┌────────────────────────────────┐
-│ 4. scripts/03b_GiaoDich.sql    │  1.500 hóa đơn + ≈5.300 chi tiết, tính TongTien,
+│ 4. sql/03_DuLieu.sql    │  1.500 hóa đơn + ≈5.300 chi tiết, tính TongTien,
 │                                │  minh họa INSERT/UPDATE/DELETE
 └───────────────┬────────────────┘
                 ▼
 ┌────────────────────────────────┐
-│ 5. scripts/04_TEST_VI_PHAM.sql │  (tùy chọn) 10 lệnh sai → phải bị chặn 10/10
+│ 5. sql/others_TEST_VI_PHAM.sql │  (tùy chọn) 10 lệnh sai → phải bị chặn 10/10
 └────────────────────────────────┘
 ```
 
@@ -131,13 +131,13 @@ Các file trên thuộc **cùng một chuỗi chạy liên tục**; dữ liệu 
 | Script | Phụ thuộc gì | Lỗi nếu chạy sai thứ tự |
 |---|---|---|
 | `02_Bang.sql` | CSDL `QL_CAFE_NHAHANG` phải tồn tại (dòng 1: `USE QL_CAFE_NHAHANG;`) | `Cannot open database "QL_CAFE_NHAHANG" requested by the login` |
-| `03a_DanhMuc.sql` | 10 bảng đã tồn tại **và đang rỗng** (`IDENTITY` bắt đầu từ 1) | Vi phạm khóa chính/khóa ngoại, hoặc dữ liệu tham chiếu trỏ sang món khác |
-| `03b_GiaoDich.sql` | Dữ liệu danh mục đã có, đặc biệt: ≥1 nhân viên `PhucVu`, ≥1 món `DangBan = 1`, bảng `Ban` không rỗng | `THROW 50001` / `50002` / `50003` — script tự dừng |
-| `04_TEST_VI_PHAM.sql` | `03b` đã nạp xong (cần dữ liệu thật để thử trùng khóa) | `THROW 51001` — script tự dừng |
+| `03_DuLieu.sql` | 10 bảng đã tồn tại **và đang rỗng** (`IDENTITY` bắt đầu từ 1) | Vi phạm khóa chính/khóa ngoại, hoặc dữ liệu tham chiếu trỏ sang món khác |
+| `03_DuLieu.sql` | Dữ liệu danh mục đã có, đặc biệt: ≥1 nhân viên `PhucVu`, ≥1 món `DangBan = 1`, bảng `Ban` không rỗng | `THROW 50001` / `50002` / `50003` — script tự dừng |
+| `others_TEST_VI_PHAM.sql` | `03b` đã nạp xong (cần dữ liệu thật để thử trùng khóa) | `THROW 51001` — script tự dừng |
 
 ### 4.3. Phụ thuộc ẩn quan trọng nhất: `MaMon` cứng
 
-Trong `scripts/03a_DanhMuc.sql`, các bảng con dùng **số cứng**:
+Trong `sql/03_DuLieu.sql`, các bảng con dùng **số cứng**:
 
 - `MonAn` → `MaMon` từ **1 đến 18**
 - `ThucUong` → `MaMon` từ **19 đến 36**
@@ -154,7 +154,7 @@ Nghĩa là: dòng `ThucUong` số 19 giả định `Mon` có `MaMon = 19` là "C
 1. `File` → `Open` → `File…` → chọn `sql/01_CAUHINH_CSDL.sql`.
 2. Kiểm tra thanh trạng thái / ô chọn database: với file `01`, **không cần** chọn CSDL (script tự `USE master`).
 3. Nhấn `Execute` (F5).
-4. Lặp lại với `02_Bang.sql`, rồi `scripts/03a_DanhMuc.sql`, `scripts/03b_GiaoDich.sql` — **đúng thứ tự**.
+4. Lặp lại với `02_Bang.sql`, rồi `sql/03_DuLieu.sql` — **đúng thứ tự**.
 5. Với file `02_Bang.sql` và các file seed: chọn đúng database `QL_CAFE_NHAHANG` ở dropdown (dù script đã có `USE`, chọn đúng giúp tránh lỗi khi mở nhầm file).
 
 **Cách 2 — `sqlcmd` (dòng lệnh):**
@@ -162,8 +162,8 @@ Nghĩa là: dòng `ThucUong` số 19 giả định `Mon` có `MaMon = 19` là "C
 ```bat
 sqlcmd -S localhost -E -f 65001 -i sql\01_CAUHINH_CSDL.sql
 sqlcmd -S localhost -E -f 65001 -i sql\02_Bang.sql
-sqlcmd -S localhost -E -f 65001 -i scripts\03a_DanhMuc.sql
-sqlcmd -S localhost -E -f 65001 -i scripts\03b_GiaoDich.sql
+sqlcmd -S localhost -E -f 65001 -i scripts\03_DuLieu.sql
+sqlcmd -S localhost -E -f 65001 -i scripts\03_DuLieu.sql
 ```
 
 Giải thích từng tham số:
@@ -641,7 +641,7 @@ CREATE TABLE DinhLuong (
 
 **Đọc bảng này thế nào:** mỗi dòng nghĩa là *"để làm 1 phần món `MaMon`, cần `SoLuong` đơn vị nguyên liệu `MaNL`"*.
 
-Ví dụ thật từ `scripts/03a_DanhMuc.sql`:
+Ví dụ thật từ `sql/03_DuLieu.sql`:
 
 ```sql
 (1, 3, 3.00), (1, 7, 0.06), (1, 5, 0.05), (1, 10, 0.01),
@@ -722,7 +722,7 @@ CREATE TABLE HoaDon (
 SELECT SUM(SoLuong * DonGia) FROM ChiTietHoaDon WHERE MaHD = ?
 ```
 
-Nhưng CSDL **không tự đảm bảo** điều này. Không có `COMPUTED COLUMN`, không có trigger. `scripts/03b_GiaoDich.sql` tính nó bằng một câu `UPDATE` duy nhất ở BƯỚC 4.
+Nhưng CSDL **không tự đảm bảo** điều này. Không có `COMPUTED COLUMN`, không có trigger. `sql/03_DuLieu.sql` tính nó bằng một câu `UPDATE` duy nhất ở BƯỚC 4.
 
 > **Quy tắc:** mọi thao tác thêm/sửa/xóa `ChiTietHoaDon` phải kèm theo việc tính lại `TongTien`. Đây là ứng viên tự nhiên cho trigger ở M3.
 
@@ -795,7 +795,7 @@ ALTER TABLE NhanVien
 
 - Cột được khai báo `NOT NULL` **và** có `DEFAULT` → SQL Server điền `GETDATE()` cho mọi dòng hiện có, nên lệnh thành công.
 - Nếu bỏ `DEFAULT`, lệnh sẽ **thất bại**: `ALTER TABLE only allows columns to be added that can contain nulls...`. Đây là lỗi rất hay gặp.
-- Hệ quả dữ liệu: mọi nhân viên đã có sẽ nhận `NgayVaoLam` = thời điểm chạy `ALTER`, **không phải** ngày vào làm thật. Với dự án này không sao vì `ALTER` chạy trước khi nạp dữ liệu (`scripts/03a_DanhMuc.sql` chèn tường minh `NgayVaoLam`).
+- Hệ quả dữ liệu: mọi nhân viên đã có sẽ nhận `NgayVaoLam` = thời điểm chạy `ALTER`, **không phải** ngày vào làm thật. Với dự án này không sao vì `ALTER` chạy trước khi nạp dữ liệu (`sql/03_DuLieu.sql` chèn tường minh `NgayVaoLam`).
 
 ```sql
 CREATE UNIQUE INDEX UX_NhanVien_SDT ON NhanVien(SoDienThoai) WHERE SoDienThoai IS NOT NULL;
@@ -923,7 +923,7 @@ WHERE name IN ('LoaiMon','Ban','NhanVien','NguyenLieu','Mon',
 
 Hai file này **không nằm trong `sql/`** nhưng thuộc cùng chuỗi chạy, nên cần biết để hiểu trạng thái CSDL sau bước 2. Phần này giải thích ở mức **tổng quan logic**, không đi từng dòng.
 
-### 7.1. `scripts/03a_DanhMuc.sql` — nạp dữ liệu danh mục
+### 7.1. `sql/03_DuLieu.sql` — nạp dữ liệu danh mục
 
 **Mục đích:** đổ dữ liệu giả lập (hư cấu, không dùng người thật) vào 8 bảng danh mục, theo đúng thứ tự phụ thuộc khóa ngoại.
 
@@ -973,7 +973,7 @@ END CATCH;
 2. Phân loại tồn kho: bằng 0 / bằng định mức / dưới định mức / trên định mức.
 3. Danh sách nguyên liệu **không** được dùng trong `DinhLuong`.
 
-### 7.2. `scripts/03b_GiaoDich.sql` — sinh giao dịch
+### 7.2. `sql/03_DuLieu.sql` — sinh giao dịch
 
 **Mục đích:** sinh 1.500 hóa đơn và khoảng 5.300 dòng chi tiết, phân bố theo trạng thái và khung giờ, rồi tính `TongTien`; cuối file minh họa `INSERT`/`UPDATE`/`DELETE`.
 
@@ -1050,11 +1050,11 @@ Tổng số dòng vì thế **dao động quanh 5.250** (trung bình 3,5 món ×
 
 Và **5 hóa đơn rỗng** (không có chi tiết) rơi vào nhóm 5 hóa đơn **cuối** của nhóm đã đóng — theo cách tính trên, đó là các hóa đơn `Hủy`. Tức là: **cả 5 hóa đơn rỗng đều ở trạng thái "Hủy"**.
 
-> **Lưu ý quan trọng:** các con số trên **phụ thuộc vào dữ liệu `Ban`**. Nếu bạn sửa `scripts/03a_DanhMuc.sql` để có 8 bàn "Có khách", số hóa đơn `Mở` sẽ là 8 và `Đã thanh toán` giảm còn 1.387.
+> **Lưu ý quan trọng:** các con số trên **phụ thuộc vào dữ liệu `Ban`**. Nếu bạn sửa `sql/03_DuLieu.sql` để có 8 bàn "Có khách", số hóa đơn `Mở` sẽ là 8 và `Đã thanh toán` giảm còn 1.387.
 
 **Một chi tiết dễ bỏ qua nhưng ảnh hưởng tới báo cáo:** BƯỚC 4 tính `TongTien` cho **tất cả** hóa đơn, **kể cả hóa đơn `Hủy`**. Nghĩa là hóa đơn đã hủy vẫn có `TongTien > 0`. Vì vậy **mọi truy vấn doanh thu phải lọc** `WHERE TrangThai = N'Đã thanh toán'`, nếu không sẽ cộng cả tiền của hóa đơn hủy.
 
-### 7.3. `scripts/04_TEST_VI_PHAM.sql` — kiểm chứng ràng buộc
+### 7.3. `sql/others_TEST_VI_PHAM.sql` — kiểm chứng ràng buộc
 
 **Mục đích:** đáp ứng gạch đầu dòng cuối của Readme mục 3.3 — chứng minh hệ thống **từ chối đúng** dữ liệu sai.
 
@@ -1085,9 +1085,9 @@ Và **5 hóa đơn rỗng** (không có chi tiết) rơi vào nhóm 5 hóa đơn
 
 | Rủi ro | Chi tiết |
 |---|---|
-| **Chống chạy lại (đã xử lý)** | `03b_GiaoDich.sql` `THROW 50012` nếu `HoaDon` đã có dòng → không thể nhân đôi dữ liệu. `03a_DanhMuc.sql` không có chốt, nhưng vi phạm khóa chính sẽ làm nó rollback (an toàn) |
+| **Chống chạy lại (đã xử lý)** | `03_DuLieu.sql` `THROW 50012` nếu `HoaDon` đã có dòng → không thể nhân đôi dữ liệu. `03_DuLieu.sql` không có chốt, nhưng vi phạm khóa chính sẽ làm nó rollback (an toàn) |
 | **Dữ liệu ngẫu nhiên** | Mỗi lần chạy khác nhau → số liệu báo cáo khác nhau giữa các máy |
-| **Phụ thuộc `MaMon` cứng** | `03a_DanhMuc.sql` gán `MaMon` 1..36; chỉ đúng khi `Mon` đang rỗng |
+| **Phụ thuộc `MaMon` cứng** | `03_DuLieu.sql` gán `MaMon` 1..36; chỉ đúng khi `Mon` đang rỗng |
 | **Phụ thuộc dữ liệu `Ban`** | Số hóa đơn `Mở` = số bàn "Có khách"; sửa `Ban` sẽ đổi phân bố |
 | **Chạy một phần** | Phần nạp dữ liệu bọc trong transaction, lỗi giữa chừng → rollback toàn bộ (an toàn). Nhưng nếu chạy **từng khối** bằng tay thì có thể dở dang |
 | **Minh họa DML làm nhảy `IDENTITY`** | Bước 6.1 thêm rồi xóa một món → `Mon.MaMon` kế tiếp bị nhảy số. Không ảnh hưởng dữ liệu, nhưng đừng ngạc nhiên khi thấy `IDENT_CURRENT` lớn hơn 36 |
@@ -1119,7 +1119,7 @@ Tổng hợp các quyết định thiết kế quan trọng, để bạn không 
    Có thể thêm một thức uống vào `MonAn`. Cách sửa: trigger `INSTEAD OF INSERT` hoặc trigger `AFTER INSERT` kiểm tra `Mon.Nhom` (Readme xếp vào M3).
 
 2. **Không chặn 2 hóa đơn `Mở` trên cùng một bàn.**
-   Đây là quy tắc nghiệp vụ mà Readme mục 1 nêu rõ ("chặn bàn đang có khách nhận đặt thêm"). Hiện `scripts/03b_GiaoDich.sql` có câu kiểm tra phát hiện vi phạm, nhưng **không có ràng buộc nào ngăn chặn**. Cách sửa: trigger hoặc unique filtered index trên `HoaDon(MaBan) WHERE TrangThai = N'Mở'` *(gợi ý — cần nhóm bàn, vì unique index có điều kiện không cho phép nhiều hơn 1 dòng thỏa điều kiện)*.
+   Đây là quy tắc nghiệp vụ mà Readme mục 1 nêu rõ ("chặn bàn đang có khách nhận đặt thêm"). Hiện `sql/03_DuLieu.sql` có câu kiểm tra phát hiện vi phạm, nhưng **không có ràng buộc nào ngăn chặn**. Cách sửa: trigger hoặc unique filtered index trên `HoaDon(MaBan) WHERE TrangThai = N'Mở'` *(gợi ý — cần nhóm bàn, vì unique index có điều kiện không cho phép nhiều hơn 1 dòng thỏa điều kiện)*.
 
 3. **`Ban.TrangThai = N'Đã đặt'` chưa có dữ liệu hỗ trợ.**
    Trong mô hình **không có bảng đặt bàn** (reservation). Vậy trạng thái "Đã đặt" hiện chỉ là nhãn, không có thông tin ai đặt, đặt lúc nào, cho mấy người. Đây là **khoảng trống thiết kế** cần nhóm quyết định: giữ nguyên (chấp nhận hạn chế) hay bổ sung bảng `DatBan` ở M2/M3.
@@ -1140,7 +1140,7 @@ Trả lời được những câu này nghĩa là bạn hiểu thư mục `sql/`
 5. Vì sao `ChiTietHoaDon` phải lưu `DonGia` riêng thay vì `JOIN` sang `Mon` để lấy giá?
 6. `COLLATE Vietnamese_CI_AS` có cho phép `N'co khach'` khớp `N'Có khách'` không? Vì sao?
 7. Vì sao `ALTER TABLE NhanVien ADD NgayVaoLam DATE NOT NULL` cần kèm `DEFAULT`?
-8. Chạy `scripts/03b_GiaoDich.sql` hai lần trên cùng CSDL sẽ ra bao nhiêu hóa đơn? Vì sao?
+8. Chạy `sql/03_DuLieu.sql` hai lần trên cùng CSDL sẽ ra bao nhiêu hóa đơn? Vì sao?
 9. Hóa đơn `Hủy` có `TongTien > 0` không? Điều đó ảnh hưởng gì đến truy vấn doanh thu?
 10. Nếu bạn thêm bảng `DatBan` vào `02_Bang.sql`, phải sửa những chỗ nào?
 

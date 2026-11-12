@@ -8,7 +8,7 @@
 | STT | Họ và tên | Mã sinh viên | Vai trò & Phần việc phụ trách | Tỷ lệ hoàn thành |
 |---|---|---|---|:---:|
 | 1 | **Trần Thanh Nam** | *Trưởng nhóm* | Thiết kế kiến trúc tổng thể, kịch bản tạo CSDL & cấu hình lưu trữ (`01_CAUHINH_CSDL.sql`), Tối ưu hóa hiệu năng Execution Plan (`08_ToiUu.sql`), Tổng hợp báo cáo & Nhật ký AI | 100% |
-| 2 | **Mạc Minh Hải** | 125001638 | Thiết kế mô hình dữ liệu, Ràng buộc toàn vẹn bảng (`02_Bang.sql`), Sinh dữ liệu mẫu danh mục & giao dịch (`03a_DanhMuc.sql`, `03b_GiaoDich.sql`), Xây dựng bộ 20 truy vấn & 3 View (`04_TruyVan_View.sql`) | 100% |
+| 2 | **Mạc Minh Hải** | 125001638 | Thiết kế mô hình dữ liệu, Ràng buộc toàn vẹn bảng (`02_Bang.sql`), Sinh dữ liệu mẫu danh mục & giao dịch (`03_DuLieu.sql`), Xây dựng bộ 20 truy vấn & 3 View (`04_TruyVan_View.sql`) | 100% |
 | 3 | **Trần Anh Thế** | 125001555 | Xây dựng logic nghiệp vụ Backend CSDL: 5 Stored Procedures (`sp_GoiMon`, `sp_ThanhToan`, `sp_MoHoaDon`, `sp_HuyHoaDon`, `sp_ThongKeDoanhThu`) và 3 User-Defined Functions (`fn_GiaVonMon`, `fn_NguyenLieuDuoiDinhMuc`, `fn_DanhSachMonTheoLoai`) (`05_ThuTuc_Ham.sql`) | 100% |
 | 4 | **Tống Thái Sơn** | 125001568 | Đảm bảo tính toàn vẹn nghiệp vụ & giao tác: 3 Triggers đa dòng và 2 Kịch bản Giao tác ACID (`06_Trigger_GiaoTac.sql`), Quản trị an toàn dữ liệu: Phân quyền RBAC 4 vai trò, Chiến lược sao lưu/khôi phục và thiết kế phương án High Availability (`07_PhanQuyen_SaoLuu.sql`) | 100% |
 
@@ -68,7 +68,7 @@ Hệ thống quản trị CSDL cho mô hình **Nhà hàng kết hợp Quán cà 
 
 ## 3. DỮ LIỆU MẪU VÀ KIỂM THỬ BIÊN
 
-### 3.1. Phân bổ dữ liệu (`03a_DanhMuc.sql` & `03b_GiaoDich.sql`)
+### 3.1. Phân bổ dữ liệu (`03_DuLieu.sql` & `03_DuLieu.sql`)
 - **Dữ liệu danh mục:** 11 Loại món, 15 Bàn (5 Có khách, 3 Đã đặt, 7 Trống), 12 Nhân viên đủ 4 chức vụ, 28 Nguyên liệu, 36 Món (18 Đồ ăn, 18 Thức uống), 130 dòng định lượng công thức.
 - **Dữ liệu giao dịch quy mô lớn (phục vụ tối ưu):**
   - **1.500** Hóa đơn (1.390 Đã thanh toán, 105 Hủy, 5 Mở tương ứng chính xác với 5 bàn "Có khách").

@@ -1,6 +1,6 @@
 -- Script này dùng để reset cơ sở dữ liệu về trạng thái ban đầu (xóa tất cả các bảng và dữ liệu)
 -- Sau khi chạy file này, chạy lại theo đúng thứ tự:
---   02_Bang.sql  ->  03a_DanhMuc.sql  ->  03b_GiaoDich.sql  ->  04_TEST_VI_PHAM.sql
+--   02_Bang.sql  ->  03_DuLieu.sql  ->  others_TEST_VI_PHAM.sql
 -- Lưu ý: danh sách DROP dưới đây phải khớp với danh sách bảng trong 02_Bang.sql.
 --        Khi thêm bảng mới, cập nhật CẢ HAI file.
 

@@ -133,7 +133,7 @@ git merge master          # giải quyết xung đột nếu có
 - [ ] **Tự chạy lại toàn chuỗi script được chưa**
 - [ ] Giải thích được đoạn code nếu bị hỏi
 
-> PR **bắt buộc** khi sửa `sql/02_Bang.sql`, `scripts/03b_GiaoDich.sql`, hoặc thêm đối tượng SQL mới.
+> PR **bắt buộc** khi sửa `sql/02_Bang.sql`, `sql/03_DuLieu.sql`, hoặc thêm đối tượng SQL mới.
 
 ---
 
@@ -158,7 +158,7 @@ Kết quả **rỗng** = sạch.
 **Sau khi giải quyết xung đột, bắt buộc chạy lại toàn chuỗi:**
 
 ```text
-sql/01_CAUHINH_CSDL.sql → sql/02_Bang.sql → scripts/03a_DanhMuc.sql → scripts/03b_GiaoDich.sql
+sql/01_CAUHINH_CSDL.sql → sql/02_Bang.sql → sql/03_DuLieu.sql
 ```
 
 > ⚠️ `01_CAUHINH_CSDL.sql` **xóa CSDL `QL_CAFE_NHAHANG`** và tên được viết cứng. Nhắn nhóm trước khi chạy. Muốn kiểm chứng an toàn: copy script ra file tạm (không commit) và đổi tên CSDL thành `QL_CAFE_NHAHANG_TEST`.
@@ -172,9 +172,9 @@ Rối quá thì bỏ: `git merge --abort`.
 | Việc | Quy tắc |
 |---|---|
 | **Thứ tự chạy** | `01` → `02` → `03a` → `03b` (→ `04` nếu cần kiểm chứng). Không đổi, không chạy lẻ |
-| **Chạy lại dữ liệu** | `03b_GiaoDich.sql` **đã có chốt chặn**: `HoaDon` còn dữ liệu thì `THROW 50012` và dừng trước khi ghi. Muốn nạp lại phải `03_RESET_DB.sql` → `02_Bang.sql` → `03a` → `03b` |
-| **`03a_DanhMuc.sql`** | Gán `MaMon` **cứng** 1..36. Chỉ nạp trên CSDL vừa tạo lại từ đầu |
-| **Thêm bảng vào `02_Bang.sql`** | Phải sửa **2 chỗ**: `DROP` ở đầu file (con trước, cha sau) + `CREATE` ở thân file. Cập nhật cả `03_RESET_DB.sql` |
+| **Chạy lại dữ liệu** | `03_DuLieu.sql` **đã có chốt chặn**: `HoaDon` còn dữ liệu thì `THROW 50012` và dừng trước khi ghi. Muốn nạp lại phải `others_RESET_DB.sql` → `02_Bang.sql` → `03a` → `03b` |
+| **`03_DuLieu.sql`** | Gán `MaMon` **cứng** 1..36. Chỉ nạp trên CSDL vừa tạo lại từ đầu |
+| **Thêm bảng vào `02_Bang.sql`** | Phải sửa **2 chỗ**: `DROP` ở đầu file (con trước, cha sau) + `CREATE` ở thân file. Cập nhật cả `others_RESET_DB.sql` |
 | **Đổi tên cột/bảng** | Phải báo cả nhóm — sẽ làm hỏng `scripts/*.sql` và truy vấn của người khác |
 | **`HoaDon.TongTien`** | Là dữ liệu dẫn xuất. Sửa `ChiTietHoaDon` thì **phải tính lại** (hiện chưa có trigger) |
 | **Encoding** | Lưu `.sql` ở **UTF-8 không BOM**. Sửa sang ANSI sẽ hỏng tiếng Việt và `CHECK` sẽ từ chối dữ liệu đúng |
@@ -194,7 +194,7 @@ Rối quá thì bỏ: `git merge --abort`.
 - [ ] `git status` — không có file rác (`.mdf`, `.ldf`, `.bak`, `.tmp`, `.vs/`)
 - [ ] `git diff --staged` — đúng những gì mình định gửi
 - [ ] Đã chạy lại `01` → `02` → `03a` → `03b` (và `04` nếu có sửa ràng buộc), không lỗi
-- [ ] `04_TEST_VI_PHAM.sql` báo `10/10 bị chặn`, `0 lọt` nếu bạn có sửa schema
+- [ ] `others_TEST_VI_PHAM.sql` báo `10/10 bị chặn`, `0 lọt` nếu bạn có sửa schema
 - [ ] Các câu kiểm tra cuối script trả về đúng số dòng, câu kiểm tra lỗi trả về rỗng
 - [ ] Không có mật khẩu thật, không có dữ liệu người thật
 - [ ] Thông điệp commit đúng định dạng mục 4
@@ -221,9 +221,9 @@ Chi tiết: [WORKING.md](WORKING.md) mục 12.
 
 - `sql/01_CAUHINH_CSDL.sql` → **xóa toàn bộ CSDL** rồi tạo lại.
 - `sql/02_Bang.sql` → **xóa toàn bộ 10 bảng** và dữ liệu trong đó.
-- `scripts/03b_GiaoDich.sql` → **đã có chốt chặn** (`THROW 50012`): chạy lại trên CSDL đang có hóa đơn sẽ dừng ngay, không nhân đôi dữ liệu.
-- `scripts/03a_DanhMuc.sql` → dùng `MaMon` cứng, chạy sai thời điểm sẽ trỏ sai món.
-- `scripts/04_TEST_VI_PHAM.sql` → chỉ kiểm chứng ràng buộc, kết thúc bằng `ROLLBACK`, không đổi dữ liệu.
+- `sql/03_DuLieu.sql` → **đã có chốt chặn** (`THROW 50012`): chạy lại trên CSDL đang có hóa đơn sẽ dừng ngay, không nhân đôi dữ liệu.
+- `sql/03_DuLieu.sql` → dùng `MaMon` cứng, chạy sai thời điểm sẽ trỏ sai món.
+- `sql/others_TEST_VI_PHAM.sql` → chỉ kiểm chứng ràng buộc, kết thúc bằng `ROLLBACK`, không đổi dữ liệu.
 
 👉 Chạy bất kỳ script nào ở trên: **báo nhóm trước**.
 

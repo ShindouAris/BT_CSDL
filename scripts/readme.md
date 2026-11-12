@@ -1,1 +1,0 @@
-Thư mục này chứa các script của AI tạo ra nhằm mục đích tự động hoá

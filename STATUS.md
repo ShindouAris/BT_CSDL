@@ -1,7 +1,7 @@
 | Hạng mục | Tỷ trọng | Trạng thái |
 |---|---|---|
 | `01_CSDL`, `02_Bang` | 10% | **Xong** |
-| `03_DuLieu` (`03a_DanhMuc`, `03b_GiaoDich`) | 8% | **Xong** |
+| `03_DuLieu` (gộp từ 03a, 03b cũ) | 8% | **Xong** |
 | `04_TruyVan_View` (20 truy vấn + 3 view) | 15% | **Xong** |
 | `05_ThuTuc_Ham` (5 stored procedure + 3 function) | 17% | **Xong** |
 | `06_Trigger_GiaoTac` (3 trigger + 2 giao tác) | 10% | **Xong** |

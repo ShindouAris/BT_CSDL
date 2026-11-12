@@ -33,7 +33,7 @@ GO
    sẽ ghi "KHÔNG BỊ CHẶN" — tức là ràng buộc bị thiếu, cần sửa schema.
 
    CHẠY KHI NÀO
-       Sau khi đã nạp dữ liệu:  02_Bang.sql → 03a_DanhMuc.sql → 03_DuLieu.sql → [04]
+       Sau khi đã nạp dữ liệu:  02_Bang.sql → 03_DuLieu.sql → [04]
        (cần dữ liệu sẵn có để thử trùng khóa / trùng số điện thoại)
 
    AN TOÀN

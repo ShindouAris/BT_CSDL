@@ -34,9 +34,9 @@ Không có thư mục con, không có file nào khác. → chi tiết: [Explains
 ```text
 1. sql/01_CAUHINH_CSDL.sql
 2. sql/02_Bang.sql
-3. scripts/03a_DanhMuc.sql
-4. scripts/03b_GiaoDich.sql
-5. scripts/04_TEST_VI_PHAM.sql   ← tùy chọn, chỉ kiểm chứng ràng buộc
+3. sql/03_DuLieu.sql
+4. sql/03_DuLieu.sql
+5. sql/others_TEST_VI_PHAM.sql   ← tùy chọn, chỉ kiểm chứng ràng buộc
 ```
 
 **Không được đảo.** Lý do ngắn gọn:
@@ -44,9 +44,9 @@ Không có thư mục con, không có file nào khác. → chi tiết: [Explains
 | Script | Cần gì trước | Sai thứ tự → |
 |---|---|---|
 | `02_Bang.sql` | CSDL đã tồn tại (`USE QL_CAFE_NHAHANG`) | `Cannot open database` |
-| `scripts/03a_DanhMuc.sql` | 10 bảng tồn tại **và rỗng** (`IDENTITY` từ 1) | `MaMon` lệch → `DinhLuong` trỏ sai món |
-| `scripts/03b_GiaoDich.sql` | Dữ liệu danh mục đã có | `THROW 50001/50002/50003`, script dừng |
-| `scripts/04_TEST_VI_PHAM.sql` | `03b` đã nạp xong | `THROW 51001`, script dừng |
+| `sql/03_DuLieu.sql` | 10 bảng tồn tại **và rỗng** (`IDENTITY` từ 1) | `MaMon` lệch → `DinhLuong` trỏ sai món |
+| `sql/03_DuLieu.sql` | Dữ liệu danh mục đã có | `THROW 50001/50002/50003`, script dừng |
+| `sql/others_TEST_VI_PHAM.sql` | `03b` đã nạp xong | `THROW 51001`, script dừng |
 
 → chi tiết: [Explains.md](Explains.md) mục 4
 
@@ -111,9 +111,9 @@ Ban ──< HoaDon ──< ChiTietHoaDon >── Mon
 |---|---|
 | `01_CAUHINH_CSDL.sql` | 🔴 `SINGLE_USER WITH ROLLBACK IMMEDIATE` + **`DROP DATABASE`** → xóa toàn bộ CSDL, đá mọi kết nối khác ra |
 | `02_Bang.sql` | 🔴 **10 lệnh `DROP TABLE`** → xóa toàn bộ bảng và dữ liệu |
-| `scripts/03a_DanhMuc.sql` | 🟠 Không xóa dữ liệu cũ, dùng `MaMon` **cứng** → chạy khi bảng không rỗng sẽ hỏng dữ liệu |
-| `scripts/03b_GiaoDich.sql` | 🟢 **Đã có chốt chặn** (`THROW 50012`): `HoaDon` còn dữ liệu thì dừng ngay, không nhân đôi |
-| `scripts/04_TEST_VI_PHAM.sql` | 🟢 Chỉ kiểm chứng, kết thúc bằng `ROLLBACK` → không đổi dữ liệu |
+| `sql/03_DuLieu.sql` | 🟠 Không xóa dữ liệu cũ, dùng `MaMon` **cứng** → chạy khi bảng không rỗng sẽ hỏng dữ liệu |
+| `sql/03_DuLieu.sql` | 🟢 **Đã có chốt chặn** (`THROW 50012`): `HoaDon` còn dữ liệu thì dừng ngay, không nhân đôi |
+| `sql/others_TEST_VI_PHAM.sql` | 🟢 Chỉ kiểm chứng, kết thúc bằng `ROLLBACK` → không đổi dữ liệu |
 
 👉 Chạy bất kỳ script nào ở trên: **báo nhóm trước.**
 

@@ -10,7 +10,7 @@
    sẽ ghi "KHÔNG BỊ CHẶN" — tức là ràng buộc bị thiếu, cần sửa schema.
 
    CHẠY KHI NÀO
-       Sau khi đã nạp dữ liệu:  02_Bang.sql → 03a_DanhMuc.sql → 03b_GiaoDich.sql → [04]
+       Sau khi đã nạp dữ liệu:  02_Bang.sql → 03_DuLieu.sql → [04]
        (cần dữ liệu sẵn có để thử trùng khóa / trùng số điện thoại)
 
    AN TOÀN
@@ -29,7 +29,7 @@ GO
    KIỂM TRA TIỀN ĐỀ: phải có dữ liệu thì mới thử được trùng khóa
    --------------------------------------------------------------------- */
 IF NOT EXISTS (SELECT 1 FROM dbo.ChiTietHoaDon) OR NOT EXISTS (SELECT 1 FROM dbo.NhanVien)
-    THROW 51001, N'Chưa có dữ liệu để kiểm chứng. Hãy chạy 03b_GiaoDich.sql trước.', 1;
+    THROW 51001, N'Chưa có dữ liệu để kiểm chứng. Hãy chạy 03_DuLieu.sql trước.', 1;
 
 /* ---------------------------------------------------------------------
    BẢNG GHI NHẬN KẾT QUẢ
