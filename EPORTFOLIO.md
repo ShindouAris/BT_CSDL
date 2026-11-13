@@ -39,7 +39,7 @@ Bảng phân công chi tiết theo từng file xem thêm trong [STATUS.md](STATU
 | 04/11 | Giao việc soạn Word và PowerPoint cho Thái Sơn | Anh Thế | — |
 | 06/11 | Hoàn thành 5 file SQL `04`–`08` (20 truy vấn + 3 view; 5 thủ tục + 3 hàm; 3 trigger + 2 giao tác; 4 role + sao lưu/phục hồi + HA; tối ưu 3 truy vấn). Anh Thế đẩy lên nhánh riêng (fork) | Anh Thế | `9835b62` |
 
-### Tuần 3 (07/11 – 12/11): tích hợp, sửa lỗi, hoàn thiện báo cáo và slide
+### Tuần 3 (07/11 – 13/11): tích hợp, sửa lỗi, hoàn thiện báo cáo và slide
 
 | Ngày | Công việc | Người thực hiện | Minh chứng git |
 |---|---|---|---|
