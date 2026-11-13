@@ -51,7 +51,7 @@ Bảng phân công chi tiết theo từng file xem thêm trong [STATUS.md](STATU
 | 12/11 | Anh Thế mở PR #7 (báo cáo hoàn chỉnh, cẩm nang bảo vệ); Thanh Nam gộp thư mục lồng nhau, đưa `scripts/` vào `sql/` (nhóm `others_`) và cập nhật tài liệu | Anh Thế, Thanh Nam | `b8a5995`, `a6ee235`, `83f6d39`, `2d33bf5` |
 | 12/11 | Hoàn thiện báo cáo Word và slide; Minh Hải gửi Phụ lục A/B (danh mục nộp, bảng tự kiểm rubric); chuẩn bị chốt | Thái Sơn, Anh Thế, Minh Hải | — |
 | 13/11 | Anh Thế mở PR #8 "lan_cuoi_cung": thêm bộ 8 file SQL bản cuối ở gốc repo. Xuất lại mô hình dữ liệu còn đúng 10 bảng (`MoHinh_CDM.cdm`, `MoHinh_PDM.pdm`, `MoHinh_PDM_crebas.sql`) | Anh Thế, Minh Hải | `e3be1d6`, `ba993ca` |
-| 13/11 | Gộp 8 file SQL bản cuối vào `sql/`; thay mô hình cũ trong `tai_lieu/`; cập nhật báo cáo và nhật ký AI cho khớp `08_ToiUu.sql` (2 chỉ mục); thêm ePortfolio | Thanh Nam | — |
+| 13/11 | Gộp 8 file SQL bản cuối vào `sql/`; thay mô hình cũ trong `tai_lieu/`; cập nhật báo cáo và nhật ký AI cho khớp `08_ToiUu.sql` (2 chỉ mục); thêm ePortfolio và sơ đồ luồng logic (`tai_lieu/FLOWCHART_LOGIC.md`) | Thanh Nam | — |
 
 ## 3. Góp ý và cải tiến
 
@@ -73,12 +73,13 @@ Chi tiết xem [NhatKy_AI.md](NhatKy_AI.md). Ngoài nhật ký đó, nhóm còn 
 - Hỗ trợ đồng bộ kho git: gộp thư mục lồng nhau, đưa `scripts/` vào `sql/`, đổi tên file, và cập nhật tài liệu tương ứng (11–12/11). Người yêu cầu và duyệt kết quả: Thanh Nam.
 - Hỗ trợ so sánh hai bộ SQL (`sql/` và gốc repo), phát hiện khác biệt về comment và chỉ mục, rồi cập nhật tài liệu tương ứng (13/11). Người yêu cầu và duyệt kết quả: Thanh Nam.
 - Tóm tắt trao đổi nhóm thành bản nháp ePortfolio này.
+- Vẽ sơ đồ luồng logic (flowchart Mermaid) cho các thủ tục, trigger và giao tác từ mã trong `sql/` (13/11). Người yêu cầu và duyệt kết quả: Thanh Nam.
 
 ## 5. Minh chứng đóng góp
 
 - Lịch sử commit: https://github.com/ShindouAris/BT_CSDL/commits/master
 - Pull request: #1, #2, #6, #7, #8 (do Anh Thế mở, tài khoản `Toji-Fushiguro-0`) và các lần gộp.
-- File và tài liệu liên quan: [STATUS.md](STATUS.md), [WORKING.md](WORKING.md), [NhatKy_AI.md](NhatKy_AI.md),
+- File và tài liệu liên quan: [FLOWCHART_LOGIC.md](tai_lieu/FLOWCHART_LOGIC.md), [STATUS.md](STATUS.md), [WORKING.md](WORKING.md), [NhatKy_AI.md](NhatKy_AI.md),
   [BAO_CAO_HOAN_CHINH_HQTCSDL_NHOM13.md](BAO_CAO_HOAN_CHINH_HQTCSDL_NHOM13.md).
 - Ảnh chụp trao đổi nhóm: lưu riêng ngoài repo (có thông tin cá nhân); cung cấp khi giảng viên yêu cầu.
 

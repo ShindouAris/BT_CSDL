@@ -501,6 +501,8 @@ Toàn bộ 10 ca kiểm thử cố tình vi phạm được đóng gói ở Ph�
 * **Xử lý xung đột trừ tồn kho giữa `sp_GoiMon` và Trigger TR01:** Trong `sp_GoiMon`, khi thêm món mới (`INSERT`), trigger TR01 đã tự động trừ tồn kho. Procedure thông minh kiểm tra `OBJECTPROPERTY(..., 'ExecIsTriggerDisabled')` để chỉ tự trừ kho khi trigger bị tắt, tránh triệt để lỗi **trừ tồn kho 2 lần**. Khi gọi thêm số lượng (`UPDATE`), do TR01 chỉ bắt `AFTER INSERT`, procedure sẽ tự động trừ phần tồn kho phát sinh thêm.
 * **Xử lý an toàn con trỏ CURSOR trong `sp_HuyHoaDon`:** Trong khối `CATCH`, kiểm tra `CURSOR_STATUS('local', 'cur_ChiTiet') >= 0` để đóng và giải phóng con trỏ `cur_ChiTiet`, ngăn chặn rò rỉ bộ nhớ khi xảy ra sự cố gián đoạn.
 
+*Sơ đồ luồng xử lý (flowchart) của 5 thủ tục và hàm `fn_DanhSachMonTheoLoai` xem tại [`tai_lieu/FLOWCHART_LOGIC.md`](tai_lieu/FLOWCHART_LOGIC.md), mục 1–7.*
+
 ### 6.3. Kiểm thử
 #### Bảng 6.3. Bảng tổng hợp kết quả kiểm thử các Stored Procedure và Function
 | Đối tượng | Ca thử nghiệm và Dữ liệu đầu vào | Kết quả mong đợi | Kết quả thực tế ghi nhận | Đánh giá |
@@ -551,6 +553,8 @@ WHERE nl.TonKho < nc.SoLuongCan;
 |:---:|:---|:---|:---|:---|:---|
 | **GT01** | Nguyên tử trong Gọi món (All-or-Nothing) | 1. BEGIN TRAN 2. INSERT món 1 3. INSERT món 2 4. COMMIT / ROLLBACK | Món thứ 2 bị thiếu nguyên liệu tồn kho | COMMIT thành công: cả 2 món đều được ghi nhận, tồn kho trừ đúng. | ROLLBACK toàn bộ: món thứ 1 dù đủ kho vẫn bị hủy bỏ, dữ liệu giữ nguyên 100%. |
 | **GT02** | Điểm lưu (Savepoint) trong Thanh toán | 1. BEGIN TRAN 2. SAVE TRAN sp_ThanhToan 3. Thanh toán HĐ 4. ROLLBACK TO SAVEPOINT nếu lỗi | Hóa đơn không ở trạng thái 'Mở' | COMMIT thành công hóa đơn chuyển 'Đã thanh toán', bàn về 'Trống'. | ROLLBACK TO SAVEPOINT hủy bỏ thao tác thanh toán sai mà không làm hỏng transaction chính. |
+
+*Sơ đồ luồng của ba trigger và hai kịch bản giao tác GT01, GT02 xem tại [`tai_lieu/FLOWCHART_LOGIC.md`](tai_lieu/FLOWCHART_LOGIC.md), mục 8–12.*
 
 ### 7.4. Kiểm thử thao tác nhiều dòng
 ```sql
