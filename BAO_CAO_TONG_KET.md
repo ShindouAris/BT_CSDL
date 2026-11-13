@@ -7,7 +7,7 @@
 
 | STT | Họ và tên | Mã sinh viên | Vai trò & Phần việc phụ trách | Tỷ lệ hoàn thành |
 |---|---|---|---|:---:|
-| 1 | **Trần Thanh Nam** | *Trưởng nhóm* | Thiết kế kiến trúc tổng thể, kịch bản tạo CSDL & cấu hình lưu trữ (`01_CAUHINH_CSDL.sql`), Tối ưu hóa hiệu năng Execution Plan (`08_ToiUu.sql`), Tổng hợp báo cáo & Nhật ký AI | 100% |
+| 1 | **Trần Thanh Nam** | 125001516 | Thiết kế kiến trúc tổng thể, kịch bản tạo CSDL & cấu hình lưu trữ (`01_CAUHINH_CSDL.sql`), Tối ưu hóa hiệu năng Execution Plan (`08_ToiUu.sql`), Tổng hợp báo cáo & Nhật ký AI | 100% |
 | 2 | **Mạc Minh Hải** | 125001638 | Thiết kế mô hình dữ liệu, Ràng buộc toàn vẹn bảng (`02_Bang.sql`), Sinh dữ liệu mẫu danh mục & giao dịch (`03_DuLieu.sql`), Xây dựng bộ 20 truy vấn & 3 View (`04_TruyVan_View.sql`) | 100% |
 | 3 | **Trần Anh Thế** | 125001555 | Xây dựng logic nghiệp vụ Backend CSDL: 5 Stored Procedures (`sp_GoiMon`, `sp_ThanhToan`, `sp_MoHoaDon`, `sp_HuyHoaDon`, `sp_ThongKeDoanhThu`) và 3 User-Defined Functions (`fn_GiaVonMon`, `fn_NguyenLieuDuoiDinhMuc`, `fn_DanhSachMonTheoLoai`) (`05_ThuTuc_Ham.sql`) | 100% |
 | 4 | **Tống Thái Sơn** | 125001568 | Đảm bảo tính toàn vẹn nghiệp vụ & giao tác: 3 Triggers đa dòng và 2 Kịch bản Giao tác ACID (`06_Trigger_GiaoTac.sql`), Quản trị an toàn dữ liệu: Phân quyền RBAC 4 vai trò, Chiến lược sao lưu/khôi phục và thiết kế phương án High Availability (`07_PhanQuyen_SaoLuu.sql`) | 100% |
