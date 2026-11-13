@@ -25,7 +25,7 @@ Bảng phân công chi tiết theo từng file xem thêm trong [STATUS.md](STATU
 
 | Ngày | Công việc | Người thực hiện | Minh chứng git |
 |---|---|---|---|
-| 26/10 | Lập nhóm Zalo; chia sẻ link repo GitHub; chia sẻ đề bài và rubric, giao Thái Sơn đọc đề | Anh Thế, Thanh Nam | `2354cc9` |
+| 26/10 | Lập nhóm Zalo; Thiết kế nền tảng CSDL; chia sẻ đề bài và rubric, giao Thái Sơn đọc đề | Anh Thế, Thanh Nam | `2354cc9` |
 | 26/10 | Vẽ sơ đồ quan hệ bằng DrawSQL và gửi nhóm góp ý | Thanh Nam | `f4e3535` |
 | 26/10 | Thảo luận ý nghĩa bảng `Ban` (ghi vào hóa đơn) và `LoaiMon` (phân loại, cây phân cấp qua `MaLoaiCha` tự tham chiếu); Thanh Nam giải thích cho Anh Thế | Thanh Nam, Anh Thế | `bc0fb28`, `3c2501f` |
 | 26/10 | Nạp dữ liệu mẫu (1.500 hóa đơn, ~5.200 chi tiết), script kiểm tra vi phạm ràng buộc, tài liệu quy trình làm việc | Thanh Nam | `ae0841e`, `2d20b32`, `35f6ee3`, `b520547`, `5c1276b` |
