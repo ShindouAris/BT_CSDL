@@ -191,7 +191,7 @@ Hệ thống đáp ứng đủ yêu cầu với 2 mối kết hợp N-N có thu�
 Sơ đồ CDM được thiết kế chuẩn xác bằng Sybase PowerDesigner, phản ánh đầy đủ các thực thể, thuộc tính và liên kết ngữ nghĩa:
 
 ```
-[Hình 2.1: Sơ đồ Mô hình Khái niệm (CDM) xuất từ PowerDesigner file ConceptualDataModel_1.cdm]
+[Hình 2.1: Sơ đồ Mô hình Khái niệm (CDM) xuất từ PowerDesigner file MoHinh_CDM.cdm]
 ```
 *Hình 2.1. Mô hình thực thể kết hợp (CDM) của hệ thống Nhà hàng - Quán cà phê*
 
@@ -684,7 +684,7 @@ SELECT DB_NAME() AS CSDL, COUNT(*) AS SoBan FROM Ban;
 |:---:|:---|:---:|:---|
 | **TQ01** | Tạo Composite Covering Index: `IX_HoaDon_TrangThai_NgayLap` trên `HoaDon(TrangThai, NgayLap)` INCLUDE `(TongTien, MaHD)` | **CHẤP NHẬN** | `TrangThai` lọc đẳng thức thu hẹp phạm vi; `NgayLap` là range filter cho phép Index Seek; `INCLUDE` tạo Covering Index, triệt tiêu Key Lookup. |
 | **TQ02** | 1. Tạo `IX_ChiTietHoaDon_MaMon` INCLUDE `(SoLuong, DonGia, MaHD)`<br>2. Tạo Index đơn trên `HoaDon(TrangThai)` | 1. **CHẤP NHẬN**<br>2. **BÁC BỎ** | Chỉ mục 1 bao phủ JOIN và tính tổng, triệt tiêu Table Scan CTHD. Bác bỏ chỉ mục 2 vì `TrangThai` chỉ có 3 giá trị (low cardinality), Optimizer sẽ bỏ qua; hơn nữa index composite ở TQ01 đã bao phủ cột này. |
-| **TQ03** | 1. Tạo `IX_DinhLuong_MaNL` INCLUDE `(MaMon, SoLuong)`<br>2. Tạo Index trên `HoaDon(NgayLap, TrangThai)` | 1. **CHẤP NHẬN**<br>2. **BÁC BỎ** | Chỉ mục 1 giúp gom nhóm aggregate theo `MaNL` nhanh chóng. Bác bỏ chỉ mục 2 vì trùng lặp thứ tự cột với index ở TQ01, gây lãng phí dung lượng đĩa và làm chậm lệnh INSERT/UPDATE trên bảng HoaDon. |
+| **TQ03** | 1. Tạo `IX_DinhLuong_MaNL` INCLUDE `(MaMon, SoLuong)`<br>2. Tạo Index trên `HoaDon(NgayLap, TrangThai)` | 1. **KHÔNG TẠO** trong bản nộp cuối<br>2. **BÁC BỎ** | `DinhLuong` rất nhỏ (~4 Logical Reads khi quét toàn bảng) nên chỉ mục 1 mang lại lợi ích không đáng kể; script `08_ToiUu.sql` bản cuối chỉ tạo 2 chỉ mục. TQ03 hưởng lợi từ hai chỉ mục của TQ01, TQ02. Bác bỏ chỉ mục 2 vì trùng lặp thứ tự cột với index ở TQ01, gây lãng phí dung lượng đĩa và làm chậm lệnh INSERT/UPDATE trên bảng HoaDon. |
 
 ### 9.4. Chỉ mục đã tạo
 ```sql
@@ -697,12 +697,6 @@ CREATE NONCLUSTERED INDEX IX_HoaDon_TrangThai_NgayLap
 CREATE NONCLUSTERED INDEX IX_ChiTietHoaDon_MaMon
     ON ChiTietHoaDon (MaMon)
     INCLUDE (SoLuong, DonGia, MaHD);
-
--- 3. Chỉ mục bao phủ cho DinhLuong phục vụ tính toán tiêu hao kho
-CREATE NONCLUSTERED INDEX IX_DinhLuong_MaNL
-    ON DinhLuong (MaNL)
-    INCLUDE (MaMon, SoLuong);
-GO
 ```
 
 ### 9.5. So sánh trước và sau tối ưu
@@ -711,7 +705,9 @@ GO
 |:---:|:---|:---:|:---:|:---:|:---:|
 | **TQ01** | Table Scan $\rightarrow$ Index Seek (Covering) | 45 $\rightarrow$ 6 | 8 ms $\rightarrow$ 1 ms | 12 ms $\rightarrow$ 2 ms | **Giảm 86.7%** |
 | **TQ02** | Table Scan + Hash Match $\rightarrow$ Index Seek + Merge | 198 $\rightarrow$ 46 | 15 ms $\rightarrow$ 4 ms | 20 ms $\rightarrow$ 6 ms | **Giảm 76.8%** |
-| **TQ03** | Full Scan 4 bảng $\rightarrow$ Index Seek trên CTHD & DinhLuong | 202 $\rightarrow$ 49 | 20 ms $\rightarrow$ 5 ms | 25 ms $\rightarrow$ 8 ms | **Giảm 75.7%** |
+| **TQ03** | Full Scan 4 bảng $\rightarrow$ Index Seek trên CTHD & HoaDon | 202 $\rightarrow$ 49 | 20 ms $\rightarrow$ 5 ms | 25 ms $\rightarrow$ 8 ms | **Giảm 75.7%** |
+
+> **Lưu ý:** các số liệu Logical Reads/CPU/Elapsed ở Bảng 9.3 được đo khi còn 3 chỉ mục. Bản `08_ToiUu.sql` cuối chỉ tạo 2 chỉ mục (không có `IX_DinhLuong_MaNL`), nên cần chạy lại script để cập nhật số liệu TQ03 trước khi nộp.
 
 ---
 
@@ -730,7 +726,7 @@ GO
 | 7 | Xây dựng 5 Stored Procedure và 3 Function | ChatGPT-4o | Tạo 5 SP và 3 FN đáp ứng đầy đủ yêu cầu đề tài F&B. | AI sinh mã nguồn T-SQL đáp ứng cú pháp và luồng điều khiển. | Bổ sung kiểm tra Trigger TR01 trong `sp_GoiMon` tránh trừ kho 2 lần; bổ sung deallocate CURSOR trong CATCH của `sp_HuyHoaDon`. |
 | 8 | Cài đặt Trigger đa dòng và Giao tác | GitHub Copilot | Viết TR01, TR02, TR03 và 2 kịch bản giao tác ACID. | AI ban đầu duyệt từng dòng trong trigger TR01. | Nhóm viết lại TR01 theo kỹ thuật Set-based dùng CTE gom nhóm; hoàn thiện kịch bản SAVE TRANSACTION. |
 | 9 | Phân quyền Least Privilege và Sao lưu | ChatGPT-4o | Tạo 4 login/user/role; quyền mức cột; kịch bản sao lưu Full, Diff, Log và phục hồi sang CSDL mới. | AI sinh script tạo bảo mật và sao lưu. | Bổ sung lệnh `ALTER DATABASE SET RECOVERY FULL` trước backup; tắt `COMPRESSION` để tương thích SQL Server Express. |
-| 10 | Tối ưu hiệu năng dựa trên Execution Plan | ChatGPT-4o | Phân tích 3 truy vấn nặng trên 1.500 dòng; đề xuất chỉ mục và so sánh IO/TIME. | AI đề xuất các chỉ mục cho HoaDon, ChiTietHoaDon và DinhLuong. | Nhóm chấp nhận 3 chỉ mục composite covering index; bác bỏ 2 chỉ mục đơn lẻ do AI đề xuất vì low cardinality và trùng lặp. |
+| 10 | Tối ưu hiệu năng dựa trên Execution Plan | ChatGPT-4o | Phân tích 3 truy vấn nặng trên 1.500 dòng; đề xuất chỉ mục và so sánh IO/TIME. | AI đề xuất các chỉ mục cho HoaDon, ChiTietHoaDon và DinhLuong. | Nhóm chấp nhận 2 chỉ mục composite covering index (bản `08_ToiUu.sql` cuối không tạo chỉ mục cho DinhLuong); bác bỏ 2 chỉ mục đơn lẻ do AI đề xuất vì low cardinality và trùng lặp. |
 
 ### 10.2. Đánh giá việc dùng AI
 * **Lợi ích:** Đẩy nhanh tốc độ tạo khung mã nguồn khởi điểm, sinh dữ liệu mẫu giả lập quy mô lớn có logic phân phối tự nhiên, gợi ý cú pháp phức tạp (CTE đệ quy, Window Functions).
@@ -765,6 +761,8 @@ GO
 
 ### 11.4. Nhật ký làm việc (ePortfolio)
 Kho mã nguồn và tài liệu nhóm được quản lý tập trung trên GitHub tại địa chỉ: `https://github.com/ShindouAris/BT_CSDL.git`
+
+Nhật ký làm việc theo tuần, bảng phân công và minh chứng đóng góp (commit, pull request) được ghi trong file [EPORTFOLIO.md](EPORTFOLIO.md): `https://github.com/ShindouAris/BT_CSDL/blob/master/EPORTFOLIO.md`
 
 ---
 
@@ -822,7 +820,7 @@ Kho mã nguồn và tài liệu nhóm được quản lý tập trung trên GitH
 |:---:|:---|:---:|:---|:---:|
 | 1 | `HQTCSDL_Nhom13_DeTai13.docx` | `.docx` | Báo cáo cuối kỳ hoàn chỉnh theo mẫu quy chuẩn của Khoa CNTT | [ x ] Đã nộp |
 | 2 | `HQTCSDL_Nhom13_DeTai13.pdf` | `.pdf` | Bản xuất PDF của báo cáo cuối kỳ phục vụ lưu trữ | [ x ] Đã nộp |
-| 3 | `ConceptualDataModel_1.cdm` | `.cdm` | Tệp mô hình khái niệm (CDM) thiết kế bằng Sybase PowerDesigner | [ x ] Đã nộp |
+| 3 | `MoHinh_CDM.cdm` | `.cdm` | Tệp mô hình khái niệm (CDM) thiết kế bằng Sybase PowerDesigner | [ x ] Đã nộp |
 | 4 | `PhysicalDataModel_1.pdm` | `.pdm` | Tệp mô hình vật lý (PDM) thiết kế bằng Sybase PowerDesigner | [ x ] Đã nộp |
 | 5 | `01_CAUHINH_CSDL.sql` | `.sql` | Script khởi tạo CSDL QL_CAFE_NHAHANG và cấu hình file vật lý | [ x ] Đã nộp |
 | 6 | `02_Bang.sql` | `.sql` | Script tạo 10 bảng, ràng buộc PK, FK, CK, UQ, DF và ALTER TABLE | [ x ] Đã nộp |
@@ -831,7 +829,7 @@ Kho mã nguồn và tài liệu nhóm được quản lý tập trung trên GitH
 | 9 | `05_ThuTuc_Ham.sql` | `.sql` | Script định nghĩa và kiểm thử 5 Stored Procedure, 3 Function | [ x ] Đã nộp |
 | 10 | `06_Trigger_GiaoTac.sql` | `.sql` | Script cài đặt 3 Trigger đa dòng và 2 kịch bản giao tác ACID | [ x ] Đã nộp |
 | 11 | `07_PhanQuyen_SaoLuu.sql` | `.sql` | Script tạo Login/Role, phân quyền RBAC, Backup Full/Diff/Log và Restore | [ x ] Đã nộp |
-| 12 | `08_ToiUu.sql` | `.sql` | Script phân tích Execution Plan và tạo 3 chỉ mục tối ưu hiệu năng | [ x ] Đã nộp |
+| 12 | `08_ToiUu.sql` | `.sql` | Script phân tích Execution Plan và tạo 2 chỉ mục tối ưu hiệu năng | [ x ] Đã nộp |
 | 13 | `CAM_NANG_BAO_VE_DO_AN_CHO_CAC_THANH_VIEN.md` | `.md` | Cẩm nang câu hỏi & trả lời vấn đáp cho từng thành viên trong nhóm | [ x ] Đã nộp |
 
 ### Phụ lục B. Bảng nhóm tự kiểm tra theo rubric
@@ -857,4 +855,4 @@ Toàn bộ mã nguồn T-SQL của dự án được lưu trữ và tổ chức 
 - `05_ThuTuc_Ham.sql`: 5 Stored Procedure và 3 User-Defined Function kèm kịch bản kiểm thử.
 - `06_Trigger_GiaoTac.sql`: 3 Trigger xử lý đa dòng set-based và 2 kịch bản giao tác ACID.
 - `07_PhanQuyen_SaoLuu.sql`: Tạo 4 Login/User/Role, phân quyền RBAC, Backup Full/Diff/Log và Restore sang CSDL mới.
-- `08_ToiUu.sql`: Đo đạc Execution Plan, tạo 3 chỉ mục non-clustered và phân tích đối sánh hiệu năng.
+- `08_ToiUu.sql`: Đo đạc Execution Plan, tạo 2 chỉ mục non-clustered và phân tích đối sánh hiệu năng.

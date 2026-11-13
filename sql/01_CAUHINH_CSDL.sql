@@ -1,3 +1,4 @@
+-- 01_CAUHINH_CSDL.sql: Tạo CSDL QL_CAFE_NHAHANG (file dữ liệu, file log, collation Vietnamese_CI_AS).
 USE master;
 GO
 

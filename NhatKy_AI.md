@@ -227,6 +227,8 @@ Ca #3 (trạng thái bàn) ban đầu đặt tên `N'Bàn vi phạm trạng thá
 
 **Kiểm chứng:** Chạy lệnh so sánh IO/TIME, in ra kết quả giảm tải bộ nhớ rõ rệt cho toàn bộ 3 truy vấn.
 
+**Cập nhật 13/11/2026:** bản `08_ToiUu.sql` cuối (PR #8) chỉ tạo 2 index (`IX_HoaDon_TrangThai_NgayLap`, `IX_ChiTietHoaDon_MaMon`); index `IX_DinhLuong_MaNL` không còn trong script. Số liệu logical reads ghi ở trên được đo khi còn 3 index, cần chạy lại để cập nhật cho TQ03.
+
 ---
 
 ## Điều chỉnh so với gợi ý của AI

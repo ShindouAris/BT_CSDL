@@ -1,3 +1,4 @@
+-- 02_Bang.sql: Tạo 10 bảng cùng khóa chính, khóa ngoại và các ràng buộc.
 USE QL_CAFE_NHAHANG;
 GO
 
@@ -13,18 +14,15 @@ DROP TABLE IF EXISTS Ban;
 DROP TABLE IF EXISTS LoaiMon;
 GO
 
--- Loại Món
--- Lý do tại sao lại có loại món? - Để phân loại món ăn, thức uống, ví dụ: Món ăn -> Món chính, Món phụ, Thức uống -> Nước ngọt, Cà phê, Trà, Mở rộng dễ hơn
--- Cho việc quản lý món ăn, thức uống, ví dụ: Thống kê doanh thu theo loại món, Thống kê nguyên liệu theo loại món, Quản lý giá bán theo loại món
 CREATE TABLE LoaiMon (
     MaLoai      INT IDENTITY(1,1) NOT NULL,
     TenLoai     NVARCHAR(50) NOT NULL,
-    MaLoaiCha   INT NULL, -- Mã loại ( tham chiếu đến Cha ) - FK tự tham chiếu hoặc Null nếu là loại gốc
+    MaLoaiCha   INT NULL,
     CONSTRAINT PK_LoaiMon PRIMARY KEY (MaLoai),
     CONSTRAINT UQ_LoaiMon_Ten UNIQUE (TenLoai),
     CONSTRAINT FK_LoaiMon_Cha FOREIGN KEY (MaLoaiCha) REFERENCES LoaiMon(MaLoai)
 );
--- Bàn
+
 CREATE TABLE Ban (
     MaBan       INT IDENTITY(1,1) NOT NULL,
     TenBan      NVARCHAR(20) NOT NULL,
@@ -35,7 +33,7 @@ CREATE TABLE Ban (
     CONSTRAINT CK_Ban_SucChua CHECK (SucChua > 0),
     CONSTRAINT CK_Ban_TrangThai CHECK (TrangThai IN (N'Trống', N'Có khách', N'Đã đặt'))
 );
--- Nhân Viên
+
 CREATE TABLE NhanVien (
     MaNV        INT IDENTITY(1,1) NOT NULL,
     HoTen       NVARCHAR(100) NOT NULL,
@@ -44,7 +42,7 @@ CREATE TABLE NhanVien (
     CONSTRAINT PK_NhanVien PRIMARY KEY (MaNV),
     CONSTRAINT CK_NhanVien_ChucVu CHECK (ChucVu IN (N'PhucVu', N'ThuNgan', N'Bep', N'QuanLy'))
 );
--- Nguyên liệu
+
 CREATE TABLE NguyenLieu (
     MaNL        INT IDENTITY(1,1) NOT NULL,
     TenNL       NVARCHAR(100) NOT NULL,
@@ -59,14 +57,12 @@ CREATE TABLE NguyenLieu (
 );
 GO
 
--- ---------- 2. Món và chuyên biệt hóa (đồ ăn / thức uống) ----------
--- Món
 CREATE TABLE Mon (
     MaMon       INT IDENTITY(1,1) NOT NULL,
     TenMon      NVARCHAR(100) NOT NULL,
     MaLoai      INT NOT NULL,
     GiaBan      DECIMAL(12,0) NOT NULL,
-    Nhom        CHAR(1) NOT NULL,           -- 'A' = đồ ăn, 'U' = thức uống
+    Nhom        CHAR(1) NOT NULL,
     DangBan     BIT NOT NULL CONSTRAINT DF_Mon_DangBan DEFAULT 1,
     CONSTRAINT PK_Mon PRIMARY KEY (MaMon),
     CONSTRAINT UQ_Mon_Ten UNIQUE (TenMon),
@@ -75,16 +71,15 @@ CREATE TABLE Mon (
     CONSTRAINT CK_Mon_Nhom CHECK (Nhom IN ('A', 'U'))
 );
 
--- Món Ăn
 CREATE TABLE MonAn (
     MaMon           INT NOT NULL,
-    ThoiGianCheBien INT NOT NULL,           -- phút
+    ThoiGianCheBien INT NOT NULL,
     CayHayKhong     BIT NOT NULL CONSTRAINT DF_MonAn_Cay DEFAULT 0,
     CONSTRAINT PK_MonAn PRIMARY KEY (MaMon),
     CONSTRAINT FK_MonAn_Mon FOREIGN KEY (MaMon) REFERENCES Mon(MaMon),
     CONSTRAINT CK_MonAn_ThoiGian CHECK (ThoiGianCheBien > 0)
 );
--- Thức uống
+
 CREATE TABLE ThucUong (
     MaMon       INT NOT NULL,
     Size        CHAR(1) NOT NULL CONSTRAINT DF_ThucUong_Size DEFAULT 'M',
@@ -96,12 +91,10 @@ CREATE TABLE ThucUong (
 );
 GO
 
--- ---------- 3. Định lượng (Món - Nguyên liệu, N-N) ----------
-
 CREATE TABLE DinhLuong (
     MaMon       INT NOT NULL,
     MaNL        INT NOT NULL,
-    SoLuong     DECIMAL(12,3) NOT NULL,     -- lượng nguyên liệu cho 1 phần món
+    SoLuong     DECIMAL(12,3) NOT NULL,
     CONSTRAINT PK_DinhLuong PRIMARY KEY (MaMon, MaNL),
     CONSTRAINT FK_DinhLuong_Mon FOREIGN KEY (MaMon) REFERENCES Mon(MaMon),
     CONSTRAINT FK_DinhLuong_NL FOREIGN KEY (MaNL) REFERENCES NguyenLieu(MaNL),
@@ -109,8 +102,6 @@ CREATE TABLE DinhLuong (
 );
 GO
 
--- ---------- 4. Quản lý giao dịch ----------
--- Hoá đơn
 CREATE TABLE HoaDon (
     MaHD        INT IDENTITY(1,1) NOT NULL,
     MaBan       INT NOT NULL,
@@ -124,12 +115,12 @@ CREATE TABLE HoaDon (
     CONSTRAINT CK_HoaDon_TrangThai CHECK (TrangThai IN (N'Mở', N'Đã thanh toán', N'Hủy')),
     CONSTRAINT CK_HoaDon_TongTien CHECK (TongTien >= 0)
 );
--- CHi tiết hoá đơn 
+
 CREATE TABLE ChiTietHoaDon (
     MaHD             INT NOT NULL,
     MaMon            INT NOT NULL,
     SoLuong          INT NOT NULL,
-    DonGia           DECIMAL(12,0) NOT NULL,   -- chép giá bán tại thời điểm gọi
+    DonGia           DECIMAL(12,0) NOT NULL,
     TrangThaiCheBien NVARCHAR(15) NOT NULL CONSTRAINT DF_CTHD_TrangThai DEFAULT N'Chờ',
     CONSTRAINT PK_ChiTietHoaDon PRIMARY KEY (MaHD, MaMon),
     CONSTRAINT FK_CTHD_HoaDon FOREIGN KEY (MaHD) REFERENCES HoaDon(MaHD),
@@ -140,11 +131,9 @@ CREATE TABLE ChiTietHoaDon (
 );
 GO
 
-ALTER TABLE NguyenLieu
-    ADD CONSTRAINT CK_NL_DinhMuc CHECK (DinhMucTon >= 0);
+ALTER TABLE NguyenLieu ADD CONSTRAINT CK_NL_DinhMuc CHECK (DinhMucTon >= 0);
 
-ALTER TABLE NhanVien
-    ADD NgayVaoLam DATE NOT NULL CONSTRAINT DF_NhanVien_NgayVaoLam DEFAULT GETDATE();
+ALTER TABLE NhanVien   ADD NgayVaoLam DATE NOT NULL CONSTRAINT DF_NhanVien_NgayVaoLam DEFAULT GETDATE();
 
 CREATE UNIQUE INDEX UX_NhanVien_SDT ON NhanVien(SoDienThoai) WHERE SoDienThoai IS NOT NULL;
 

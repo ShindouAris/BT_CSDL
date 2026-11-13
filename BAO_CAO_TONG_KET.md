@@ -166,7 +166,7 @@ Thực nghiệm đo đạc hiệu năng trên tập dữ liệu lớn với `SET
 |---|---|---|:---:|---|:---:|
 | **TQ01:** Doanh thu theo khung giờ | Table Scan trên 1.500 dòng `HoaDon` | Composite Index `(TrangThai, NgayLap) INCLUDE (TongTien, MaHD)` | **CHẤP NHẬN** | Index Seek trên Covering Index | Logical Reads giảm từ **45 xuống 6** (~87%) |
 | **TQ02:** Top 10 món bán chạy | Hash Match, scan toàn bộ `ChiTietHoaDon` | 1. Index `ChiTietHoaDon(MaMon) INCLUDE(SoLuong, DonGia, MaHD)`<br>2. Index đơn `HoaDon(TrangThai)` | 1. **CHẤP NHẬN**<br>2. **BÁC BỎ** (Độ chọn lọc thấp, index TQ01 đã bao phủ) | Stream Aggregate & Index Seek | Logical Reads giảm từ **198 xuống 46** (~77%) |
-| **TQ03:** Dự báo hao hụt nguyên liệu | CTE quét toàn bộ `DinhLuong` và chi tiết | 1. Index `DinhLuong(MaNL) INCLUDE(MaMon, SoLuong)`<br>2. Index `HoaDon(NgayLap, TrangThai)` | 1. **CHẤP NHẬN**<br>2. **BÁC BỎ** (Trùng lặp thứ tự cột với TQ01, gây lãng phí DML) | Nested Loops qua Index Seek | Logical Reads giảm từ **202 xuống 49** (~76%) |
+| **TQ03:** Dự báo hao hụt nguyên liệu | CTE quét toàn bộ `DinhLuong` và chi tiết | 1. Index `DinhLuong(MaNL) INCLUDE(MaMon, SoLuong)`<br>2. Index `HoaDon(NgayLap, TrangThai)` | 1. **KHÔNG TẠO** trong bản nộp cuối (`DinhLuong` rất nhỏ, lợi ích không đáng kể)<br>2. **BÁC BỎ** (Trùng lặp thứ tự cột với TQ01, gây lãng phí DML) | Nested Loops qua Index Seek | Logical Reads giảm từ **202 xuống 49** (~76%, đo khi còn 3 chỉ mục; cần đo lại với bản 2 chỉ mục) |
 
 ---
 
